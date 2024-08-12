@@ -1,0 +1,150 @@
+!TeX root = ../main.tex
+% Add the above to each chapter to make compiling the PDF easier in some editors.
+
+\chapter{Definitions and Algorithms}\label{chapter:definitions_algorithms}
+
+\section{Convex Hull}
+\label{sec:conv_hull}
+First the Convex Hull will be defined. A set $ S \subseteq \mathbb{R}^2 $ is convex if for  every
+two points p and q in S it holds that all points on the line segment connecting p and q 
+are in S again. This can be expressed, as the fact that the any convex combination of 
+p and q has to be in S again, i.e. $ \{  x | \exists u , v \geq 0 . \space p * u + q * v = x \} \subseteq S$
+has to hold. The convex hull of a set S is the smallest convex set in which S is contained. 
+There are several ways in which the convex hull can be defined.
+The convex hull CH of S is the intersection of all convex sets containing S, which 
+is also the definition Isabelle/HOL is going to use. But the convex hull can also be defined 
+as the set of all convex combinations of points in S, which can be proven equivalent to the previous definition.   
+In the two dimensional case for a finite $S \subset \mathbb{R}^2$, the convex hull CH of S 
+is a convex polygon, where the corners of this convex polygon are points from S (see figure 1). \cite{de2000computational}
+An edge connecting two points $(p,q) \in S^2$  is an edge of the convex polygon iff. all points 
+lie to the left of the line $\overline{pq}$ connecting p and q. Similarly the set of all 
+edges of the convex polygon can be defined as all $(p,q) \in S^2$ for which
+all points in S lie to the right of $\overline{pq}$  
+%might be better to define with {p,q} \in S^2 (i.e. not ordered)
+As this thesis will focus on the two dimensional case and only give an outlook on the the 
+three dimensional case, the examined algorithms compute a convex polygon for a given $S \subset \mathbb{R}^2$. 
+
+%how is it done in Isabelle
+\section{Jarvis-March Algorithm}
+The Jarvis March or Gift-Wrapping Algorithm is a simple output-sensitive way of calculating
+the convex hull of a given finite set $S \subseteq \mathbb{R}^2$ of points. It calculates the
+convex hull by calculating the corresponding convex polygon and returning
+an ordered list of the corners of the polygon. The algorithm has runtime O(n * h), where n 
+is the number of points in S and h is the number of points that lie on the convex hull or
+the number of corners on the calculated polygon to be more precicse. 
+First we will assume that no three points in S are colinear.
+The algorithm starts by choosing a point that is guaranteed to lie on the convex hull, 
+for example a $p_0 = min_y min_x S$. Then the next corner of the convex polygon
+is found by searching a $p_1$ such that all points in S lie to the left of the 
+line $\overline{p_0 p_1}$. As explained in \ref{sec:conv_hull} we know that $(p_0,p_1)$ is 
+an edge of the wanted convex polygon and we know that q is once again a point on
+the conex hull, i.e. a corner of the polygon. Therefore we can repeat the previous step
+and search for a $p_2$ such that all points in S lie left to the line $\overline{p_1 p_2}$.
+Again $p_2$ has to be a corner of the convex polygon and $(p_1,p_2)$ an edge on of the
+polygon. The algorithm continues until a $p_h = p_0$ is found to be the next point and
+stops, because the first corner of the polygon is encountered again. 
+The ordered sequence of points $p_0,p_q, ... , p_{h-1}$ are the corners of the convex polygon 
+and $(p_0,p_1),(p_1,p_2) ... ,(p_{h-2},p_{h-1}), (p_{h-1},p_0)$ are the edges of the polygon.
+Now without the assumption that no three points are colinear, we require more rigorous definitions.
+Given a $p_i$ that is a corner of the convex polygon the next corner $p_{i+1}$ 
+has to fulfill the following condition for all $q \in S$.
+Either q lies strictly left of $\overline{p_i p_{i+1}}$ ($p_i$
+, $p_{i+1}$ and $q$ are not colinear) or $q$ is contained in the closed
+segment between $p_i$ and $p_{i+1}$. In the following  a point $q$ lying strictly
+left of a line $\overline{p_i p_{i+1}}$ will be expressed as $q$ lying
+counterclockwise of the line $\overline{p_i p_{i+1}}$. This clarification avoids, that
+points which are not a corner but still lie on the convex hull are ignored (see figure 2).    
+The algorithm is simpler than the Graham Scan or the Chan's algorithm and has a worse
+runtime than both unless h is small. Graham Scan achieves a $O(n log(n))$ runtime and 
+Chan's algorithm a $O(n log(h))$ runtime. If h is small Jarvis March 
+can be faster than Graham Scan.
+\begin{lstlisting}
+    lemma turns_only_right st $\Longrightarrow$
+    turns_only_right (grahamsmarch qs st)
+\end{lstlisting}
+    
+
+\section{Graham Scan}
+
+\section{Chans Algorithm}
+
+
+Citation test~\parencite{latex}.
+
+Acronyms must be added in \texttt{main.tex} and are referenced using macros. The first occurrence is automatically replaced with the long version of the acronym, while all subsequent usages use the abbreviation.
+
+E.g. \texttt{\textbackslash ac\{TUM\}, \textbackslash ac\{TUM\}} $\Rightarrow$ \ac{TUM}, \ac{TUM}
+
+For more details, see the documentation of the \texttt{acronym} package\footnote{\url{https://ctan.org/pkg/acronym}}.
+\subsection{Subsection}
+
+See~\autoref{tab:sample}, \autoref{fig:sample-drawing}, \autoref{fig:sample-plot}, \autoref{fig:sample-listing}.
+
+\begin{table}[htpb]
+  \caption[Example table]{An example for a simple table.}\label{tab:sample}
+  \centering
+  \begin{tabular}{l l l l}
+    \toprule
+      A & B & C & D \\
+    \midrule
+      1 & 2 & 1 & 2 \\
+      2 & 3 & 2 & 3 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[htpb]
+  \centering
+  % This should probably go into a file in figures/
+  \begin{tikzpicture}[node distance=3cm]
+    \node (R0) {$R_1$};
+    \node (R1) [right of=R0] {$R_2$};
+    \node (R2) [below of=R1] {$R_4$};
+    \node (R3) [below of=R0] {$R_3$};
+    \node (R4) [right of=R1] {$R_5$};
+
+    \path[every node]
+      (R0) edge (R1)
+      (R0) edge (R3)
+      (R3) edge (R2)
+      (R2) edge (R1)
+      (R1) edge (R4);
+  \end{tikzpicture}
+  \caption[Example drawing]{An example for a simple drawing.}\label{fig:sample-drawing}
+\end{figure}
+
+\begin{figure}[htpb]
+  \centering
+
+  \pgfplotstableset{col sep=&, row sep=\\}
+  % This should probably go into a file in data/
+  \pgfplotstableread{
+    a & b    \\
+    1 & 1000 \\
+    2 & 1500 \\
+    3 & 1600 \\
+  }\exampleA
+  \pgfplotstableread{
+    a & b    \\
+    1 & 1200 \\
+    2 & 800 \\
+    3 & 1400 \\
+  }\exampleB
+  % This should probably go into a file in figures/
+  \begin{tikzpicture}
+    \begin{axis}[
+        ymin=0,
+        legend style={legend pos=south east},
+        grid,
+        thick,
+        ylabel=Y,
+        xlabel=X
+      ]
+      \addplot table[x=a, y=b]{\exampleA};
+      \addlegendentry{Example A}
+      \addplot table[x=a, y=b]{\exampleB};
+      \addlegendentry{Example B}
+    \end{axis}
+  \end{tikzpicture}
+  \caption[Example plot]{An example for a simple plot.}\label{fig:sample-plot}
+\end{figure}
