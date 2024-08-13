@@ -5,6 +5,7 @@
 
 \section{Convex Hull}
 \label{sec:conv_hull}
+\subsection{Basics}
 First the Convex Hull will be defined. A set $ s \subseteq \mathbb{R}^2 $ is convex if for  every
 two points p and q in $s$ it holds that all points on the line segment connecting p and q 
 are in $s$ again. This can be expressed, as the fact that the any convex combination of 
@@ -23,19 +24,81 @@ predicate is defined as the intersection of all sets t that contain s and fulfil
     S hull s = $\bigcap${t. S t $\land$ s $\subseteq$ t}
 \end{lstlisting}
 Consequently \lstinline|convex hull s| refers to the intersection of all convex sets that 
-contain $s$ and therefore the convex hull of the set $ s \subseteq \mathbb{R}^2 $.
+contain $s$ and therefore the convex hull of the set $s$.
 In the two dimensional case for a finite $s \subset \mathbb{R}^2$, the convex hull CH of $s$ 
 is a convex polygon and all the corners of this convex polygon are points from S (see figure 1). \cite{de2000computational}
-The edges $E \subseteq s^2$  of the polygon are exactly those $\{p,q\} \in s^2$ for which 
-either all points in $s$ lie left of the line $\overline{pq}$ or all points in $s$ lie left of the 
-line $\overline{qp}$
-An edge connecting two points $(p,q) \in S^2$  is an edge of the convex polygon iff. all points 
-lie to the left of the line $\overline{pq}$ connecting p and q. Similarly the set of all 
-edges of the convex polygon can be defined as all $(p,q) \in S^2$ for which
-all points in S lie to the right of $\overline{pq}$  
-%might be better to define with {p,q} \in S^2 (i.e. not ordered)
 As this thesis will focus on the two dimensional case and only give an outlook on the the 
-three dimensional case, the examined algorithms compute a convex polygon for a given $S \subset \mathbb{R}^2$. 
+three dimensional case, we will deal with computing the convex hull of $s \in \mathbb{R}^2$ 
+in the following and therefore computing a convex polygon as representation of the convex hull of $s$.  
+Assuming no three points in $s$ are colinear, then the edges $E \subseteq s^2$  of the polygon 
+can be described as exactly those $(p,q) \in s^2$ for which all points in $s$ lie on the left of the vector $\vec{pq}$. 
+Notice that the direction of the vector i.e. from p to q is relevant for expressing that a point
+lies on the left of the vector $\vec{pq}$.
+Of course the symmetric definition of E as those $(p,q) \in s^2$ for which all points in $s$ lie on the right of the line 
+$\vec{pq}$ works as well. The only difference is that in the set of directed edges we get, 
+every edge now points into the opposite direction. Both definitions make sense, but 
+because there is already infrastructure in place for first definition i.e. $(p,q)$  is 
+an edge if and only if all points in s are left of $\vec{pq}$, we will use this definition.
+But first we need to state the concept of a point $q$ being left of the vector $\vec{pq}$ more
+precicsely, especially when there can be three colinear points in $s$.
+
+\subsection{Orientation}
+Figure x shows the convex hull of the points $s = \{p_0,p_1,p_2,p_3\}$ in the form of a convex polygon.
+When using the previous definition, $(p_1,p_2)$, $(p_2,p_3)$ and $(p_1,p_3)$
+would be edges of the convex polygon, because it holds that all points in $s$ are left 
+of $\vec{p_1 p_2}$, left of $\vec{p_2 p_3}$ and left of $\vec{p_1 p_3}$. 
+This is an unintuitive definition which should be avoided. Therefore we define the 
+condition for $(p,q)$ to be an edge of the convex hull polygon more precicsely.
+$(p,q) \in s^2$ is an edge of the convex hull polygon if and only if all points $r \in s$ 
+are either strictly left of the vector $\vec{p q}$ (p, q and r are not colinear) or 
+r is contained in the closed segment between $p$ and $q$. The second part can be written
+as \lstinline|r $\in$ closed_segment p q| in Isabelle where \lstinline|closed_segment| is
+defined as:
+% u::real. 0 $\leq$ u $\and$ u $\leq$ 1 
+\begin{lstlisting}
+  definition closed_segment :: 'a::real_vector $\Rightarrow$ 'a $\Rightarrow$ 'a set
+  where closed_segment a b = {(1 - u) *$_R$ a + u *$_R$ b | u::real. 0 $\leq$ u $\land$ u $\leq$ 1 }
+\end{lstlisting}
+The fact that r lies strictly left 
+of $\vec{p q}$ can be expressed differently by stating that ($p$, $q$ , $r$) 
+are making a strictly counterclockwise turn. The three points are written as 
+a tuple as it is again necessary to state the order of 
+$p$, $q$ and $r$ when talking about a counterclockwise turn. In the following a counterclockwise turn will always refer to a strict 
+counterclockwise turn. Checking if a point $r$ lies
+strictly left of a vector is an operation that is essential for almost all
+convex hull algorithms. To check if the points $((x_1,y_1)$ , $(x_2,y_2)$, $(x_3,y_3))$
+make a counterclockwise turn, we can look at the sign of the determinant of the 
+following matrix.
+
+\[
+\text{det} 
+\begin{vmatrix}
+1 & x_1 & y_1 \\
+1 & x_2 & y_2 \\
+1 & x_3 & y_3 \\
+\end{vmatrix}
+= x_1 (y_2 - y_3 ) + x_2 (y_3 - y_1)+ x_3  (y_1 - y_2)
+\]
+If the determinant is positive, we know that the sequence $(x_1,y_1), (x_2,y_2) , (x_3,y_3)$
+makes a counterclockwise turn, if the determinant is zero we know that the three points are colinear 
+and if the determinant is negative, we know the the sequence $(x_1,y_1), (x_2,y_2) , (x_3,y_3)$
+makes a clockwise turn. %maybe include figure that show points making clockwise, counterclockwise turn
+%and being colinear
+In Isabelle the function that calculates the above determinant for three 
+points is called \lstinline|det3|.
+\begin{lstlisting}
+  fun det3:: point $\Rightarrow$ point $\Rightarrow$ point $\Rightarrow$ real where 
+  det3 (x1, y1) (x2, y2) (x3, y3) =
+  x1 * y2 + y1 * x3 + x2 * y3 - y2 * x3 - y1 * x2 - x1 * y3"
+\end{lstlisting}
+Based on \lstinline|det3| the \lstinline|ccw'| predicate is defined, which expresses that 
+three points (p,q,r) make a counterclockwise turn.
+\begin{lstlisting}
+  definition ccw' p q r $\longleftrightarrow$ 0 < det3 p q r
+\end{lstlisting}
+
+
+%might be better to define with {p,q} \in S^2 (i.e. not ordered)
 
 
 
@@ -51,14 +114,18 @@ convex hull by calculating the corresponding convex polygon and returning
 an ordered list of the corners of the polygon. The algorithm has runtime O(n * h), where n 
 is the number of points in S and h is the number of points that lie on the convex hull or
 the number of corners on the calculated polygon to be more precicse. 
-First we will assume that no three points in S are colinear.
 The algorithm starts by choosing a point that is guaranteed to lie on the convex hull, 
 for example a $p_0 = min_y min_x S$. Then the next corner of the convex polygon
-is found by searching a $p_1$ such that all points in S lie to the left of the 
-line $\overline{p_0 p_1}$. As explained in \ref{sec:conv_hull} we know that $(p_0,p_1)$ is 
-an edge of the wanted convex polygon and we know that q is once again a point on
-the conex hull, i.e. a corner of the polygon. Therefore we can repeat the previous step
-and search for a $p_2$ such that all points in S lie left to the line $\overline{p_1 p_2}$.
+is found by searching a $p_1$ such that every point $r \in s$ lies counterclockwise
+of $\vec{p_0 p_1}$ or is contained in the closed segment between $p_0$ and $p_1$. 
+As explained in \ref{sec:conv_hull} we then know that $(p_0,p_1)$ is 
+an edge of the wanted convex polygon and we know that $p_1$ is once again a point on
+the conex hull and even a corner of the polygon as we used the rigorous definition for
+what an edge of the polygon is. Therefore we can repeat the previous step
+and search for a $p_2$ such that every point in S lies counterclockwise of $\vec{p_1 p_2}$
+or is in the closed segment between $p_0$ and $p_1$. In Isabelle terms we want a $p_2$
+such that for all $r \in s$, it holds that 
+\lstinline|ccw' p$_1$ p$_2$ r $\lor$ r $\in$ closed_segment p$_1$ p$_2$ |.
 Again $p_2$ has to be a corner of the convex polygon and $(p_1,p_2)$ an edge on of the
 polygon. The algorithm continues until a $p_h = p_0$ is found to be the next point and
 stops, because the first corner of the polygon is encountered again. 
@@ -69,7 +136,7 @@ Given a $p_i$ that is a corner of the convex polygon the next corner $p_{i+1}$
 has to fulfill the following condition for all $q \in S$.
 Either q lies strictly left of $\overline{p_i p_{i+1}}$ ($p_i$
 , $p_{i+1}$ and $q$ are not colinear) or $q$ is contained in the closed
-segment between $p_i$ and $p_{i+1}$. In the following  a point $q$ lying strictly
+segment between $p_i$ and $p_{i+1}$. In the following  a pointy $q$ lying strictly
 left of a line $\overline{p_i p_{i+1}}$ will be expressed as $q$ lying
 counterclockwise of the line $\overline{p_i p_{i+1}}$. This clarification avoids, that
 points which are not a corner but still lie on the convex hull are ignored (see figure 2).    
