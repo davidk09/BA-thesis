@@ -96,6 +96,33 @@ three points (p,q,r) make a counterclockwise turn.
 \begin{lstlisting}
   definition ccw' p q r $\longleftrightarrow$ 0 < det3 p q r
 \end{lstlisting}
+Lastly the predicate \lstinline|ccw'_seg p q r| holds if and only if r either lies 
+counterclockwise of $\vec{pq}$ or r is contained in the closed segment between p and q.
+\begin{lstlisting}
+  definition ccw'_seg p q r = ccw' p q r $\lor$ r $\in$ closed_segment p q
+\end{lstlisting}
+
+
+\subsection{Order}
+In both algorithms we need to do the following operation. Given an corner $p$ of the convex polygon,
+find another corner by searching for a point $q$ such that for all other points 
+$r \in s$ either \lstinline|ccw' p q r| or \lstinline|r $\in$ closed_segment p q|
+holds. In short, we search for a $q$ that fulfills  
+\lstinline|$\forall$ r $\in$ s. ccw'_seg p q r|. 
+Then all other points are "left" of $\vec{p q}$ and we know $q$ is going 
+to be a corner of the polygon again. Intuitively it makes sense that given a finite 
+$s \subseteq \mathbb{R}^2$ and a corner of the convex hull polygon, 
+we can find a unique next corner. Figuratively speaking, we rotate a line that 
+starts in $p$ counterclockwise until we hit a point $q$, which is going to be the next
+corner. If we hit several points at the same time, we are just going to take the point 
+further away from $p$. Now to translate this into a formal framework, we want to find
+a $q$ that fulfills $\forall r \in s.$ \lstinline|(ccw'_seg p)| $q$ $r$. If 
+\lstinline|(ccw'_seg p)|
+
+
+
+
+
 
 
 %might be better to define with {p,q} \in S^2 (i.e. not ordered)
@@ -131,15 +158,7 @@ polygon. The algorithm continues until a $p_h = p_0$ is found to be the next poi
 stops, because the first corner of the polygon is encountered again. 
 The ordered sequence of points $p_0,p_q, ... , p_{h-1}$ are the corners of the convex polygon 
 and $(p_0,p_1),(p_1,p_2) ... ,(p_{h-2},p_{h-1}), (p_{h-1},p_0)$ are the edges of the polygon.
-Now without the assumption that no three points are colinear, we require more rigorous definitions.
-Given a $p_i$ that is a corner of the convex polygon the next corner $p_{i+1}$ 
-has to fulfill the following condition for all $q \in S$.
-Either q lies strictly left of $\overline{p_i p_{i+1}}$ ($p_i$
-, $p_{i+1}$ and $q$ are not colinear) or $q$ is contained in the closed
-segment between $p_i$ and $p_{i+1}$. In the following  a pointy $q$ lying strictly
-left of a line $\overline{p_i p_{i+1}}$ will be expressed as $q$ lying
-counterclockwise of the line $\overline{p_i p_{i+1}}$. This clarification avoids, that
-points which are not a corner but still lie on the convex hull are ignored (see figure 2).    
+
 The algorithm is simpler than the Graham Scan or the Chan's algorithm and has a worse
 runtime than both unless h is small. Graham Scan achieves a $O(n log(n))$ runtime and 
 Chan's algorithm a $O(n log(h))$ runtime. If h is small Jarvis March 
