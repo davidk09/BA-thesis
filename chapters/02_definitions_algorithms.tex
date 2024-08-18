@@ -4,8 +4,9 @@
 \chapter{Definitions and Algorithms}\label{chapter:definitions_algorithms}
 
 \section{Convex Hull}
-\label{sec:conv_hull}
+
 \subsection{Basics}
+\label{sec:basics}
 First the Convex Hull will be defined. A set $ s \subseteq \mathbb{R}^2 $ is convex if for  every
 two points p and q in $s$ it holds that all points on the line segment connecting p and q 
 are in $s$ again. This can be expressed, as the fact that the any convex combination of 
@@ -104,24 +105,149 @@ counterclockwise of $\vec{pq}$ or r is contained in the closed segment between p
 
 
 \subsection{Order}
+\label{sec:order}
 In both algorithms we need to do the following operation. Given an corner $p$ of the convex polygon,
 find another corner by searching for a point $q$ such that for all other points 
 $r \in s$ either \lstinline|ccw' p q r| or \lstinline|r $\in$ closed_segment p q|
 holds. In short, we search for a $q$ that fulfills  
 \lstinline|$\forall$ r $\in$ s. ccw'_seg p q r|. 
-Then all other points are "left" of $\vec{p q}$ and we know $q$ is going 
-to be a corner of the polygon again. Intuitively it makes sense that given a finite 
+Intuitively it makes sense that given a finite 
 $s \subseteq \mathbb{R}^2$ and a corner of the convex hull polygon, 
 we can find a unique next corner. Figuratively speaking, we rotate a line that 
 starts in $p$ counterclockwise until we hit a point $q$, which is going to be the next
 corner. If we hit several points at the same time, we are just going to take the point 
-further away from $p$. Now to translate this into a formal framework, we want to find
-a $q$ that fulfills $\forall r \in s.$ \lstinline|(ccw'_seg p)| $q$ $r$. If 
-\lstinline|(ccw'_seg p)|
+further away from $p$. Now to translate this into a formal framework, we start with
+the previous definition of finding a $q$ that fulfills 
+$\forall r \in s.$ \lstinline|(ccw'_seg p)| $q$ $r$. If \lstinline|(ccw'_seg p)| is a total
+order on $s$, we know that such a $q$ exists. That's because q is the minimum
+respect to the ordering \lstinline|(ccw'_seg p)|. For \lstinline|(ccw'_seg p)| to be a total order
+and for later proofs it is necessary that we derive some form of transitivity for the
+counterclockwise orientation. For example it should hold that if \lstinline|(ccw'_seg p a b)|
+and \lstinline|(ccw'_seg p b c)| holds, then \lstinline|(ccw'_seg p a c)| should hold 
+as well. The same implication should hold when using the \lstinline|(ccw'_seg p)| 
+ordering instead of \lstinline|(ccw'_seg p)|. Altough straightforward, this kind of transitivity does not always
+hold as the following examples shows. Clearly \lstinline|(ccw' p$_1$ p$_2$ p$_3$)| holds and also 
+\lstinline|(ccw' p$_0$ p$_3$ p$_4$)|, but \lstinline|(ccw' p$_1$ p$_2$ p$_4$)| does not hold, instead 
+\lstinline|(ccw' p$_1$ p$_4$ p$_2$)| holds. So in order for transitivity to hold, we need to restrict 
+the set on which transitivity is supposed to hold. It can be shown that if there exists a $p_0$ such
+that for all $r \in s$ it holds that \lstinline|ccw'_seg p$_0$ p$_1$ r| holds, then  
+\lstinline|(ccw'_seg p$_1$)| is transitive on $s$. This restriction avoids the counterexample
+for general transitivity from above. Transitivity also holds if there exists a point $p_0$ such 
+that all $r \in s$ are lexicographically bigger than $p_0$, meaning $\forall r .$ \lstinline|lex p$_0$ r| holds,
+where \lstinline|lex| is defined as.
+\begin{lstlisting}
+  definition lex:: point $\Rightarrow$ point $\Rightarrow$ bool where
+  "lex p q $\longleftrightarrow$ (fst p < fst q $\lor$ fst p = fst q $\land$ snd p < snd q $\lor$ p = q)"
+\end{lstlisting}
+To check if $p$ is lexicographically smaller than $q$, we check if $p_x$ is smaller than $q_x$. If 
+they are equal we check if $p_y \leq q_y$ holds. Now given for our reference set 
+$ps \subseteq \mathbb{R}^2$ if $(\forall q \in ps.$  \lstinline| ccw'_seg  p_stl p_last q| $)\lor($
+$\forall q \in ps.$ \lstinline|lex p_last q| $)$ holds, then the following lemmas can be proven.
+\begin{lstlisting}
+  lemma ccw'_seg_trans:
+  assumes "p $\in$ ps" "q $\in$ ps" "k $\in$ ps"
+  assumes "ccw'_seg p_last p q" "ccw'_seg p_last k p"
+  shows "ccw'_seg p_last k q"
+\end{lstlisting}
+\begin{lstlisting}
+  lemma ccw'_seg_total:
+  assumes "p $\in$ ps" "q $\in$ ps"
+  shows "ccw'_seg p_last p q $\lor$ ccw'_seg p_last q p"
+\end{lstlisting}
+\begin{lstlisting}
+  lemma ccw'_seg_antisymmetric:
+  assumes "ccw'_seg p_last p q $\land$ ccw'_seg p_last q p"
+  shows "p = q"
+\end{lstlisting}
+Reflexivity directly follows from the definition of \lstinline|ccw'_seg|. Therefore we know
+that there exists a unique $q$ such that $\forall r \in ps.$ \lstinline|(ccw'_seg p_last) q r|.
+Notice how $ps$ was defined using $p\_last$.
+\subsection{Convex Polygon}
+\label{sec:conv_poly}
+Both algorithms calculate the convex polygon that corresponds to the 
+convex hull of the input set $s \subseteq \mathbb{R}^2$. This convex polygon 
+is described by a list of points from $s$ that are the corners of this convex polygon.
+So far, we just always just stated that the convex polygon corresponds to the 
+convex hull, yet it is not obvious that this is the case. Therefore we require a  
+description of a convex polygon in Isabelle/HOL and we need 
+to know that this description is indeed equivalent to \lstinline|convex hull|, which is defined 
+as Intersection of all convex sets that contain $s$. 
+To be more precicse, we require a proof that the convex hull of the corners of such a 
+convex polygon corresponds to the set of all points that lie within the polygon.
+This fact was proven for a list of corners \lstinline|p0 # ps| that should
+represent a convex polygon by Simon Hanssen.
+\begin{lstlisting}
+  lemma polygon_eq_convex_hull:
+  assumes turns_only_left (p0 # ps)
+      and sorted_wrt (ccw' p0) ps
+      and 2 $\leq$ length ps
+    shows list_all (encompasses p) (polychain_of (p0 # ps @ [p0]))
+       $\longleftrightarrow$ p $\in$ convex hull (set (p0 # ps))"
+\end{lstlisting}
+To understand this proof, we need to first look at the definitions of all the predicates
+used. First \lstinline|turns_only_left l| for a list l expresses that every three consecutive
+points in the list are turning counterclockwise. This ensures that every interior angle of 
+the polygon is less than or equal $180^\circ$, which is one of the typical definitions
+of a convex polygon.
+\begin{lstlisting}
+  fun turns_only_left :: "point list $\Rightarrow$ bool" where
+  "turns_only_left (p#q#r#ps) $\longleftrightarrow$ ccw' p q r $\land$ turns_only_left (q#r#ps)"|
+  "turns_only_left _ = True"
+\end{lstlisting}
+Next \lstinline|sorted_wrt (ccw' p0)|, where p0 is the start or our list of corners, states that
+for every corner $p$ in the list, all corners that are behind it in the list, lie counterclockwise
+of $\overrightarrow{p0  p}$.
+\begin{lstlisting}
+  fun sorted_wrt :: "('a $\Rightarrow$ 'a $\Rightarrow$ bool) $\Rightarrow$ 'a list $\Rightarrow$ bool" where
+"sorted_wrt P [] = True" |
+"sorted_wrt P (x # ys) = (($\forall$ y $\in$ set ys. P x y) $\land$ sorted_wrt P ys)"
+\end{lstlisting}     
+This property avoids degenerations as shown in Figure x.
+Lastly \lstinline| 2 $\leq$ length ps | is needed, as the definition does not work in the case 
+of two corners, where the polygon is just a closed segment between two points.
+Now given a list \lstinline|p0 # ps| fulfills these properties, then we know that this list
+describes a list of corners of a convex polygon and the following statement holds.
+\begin{lstlisting}
+  list_all (encompasses p) (polychain_of (p0 # ps @ [p0]))
+       $\longleftrightarrow$ p $\in$ convex hull (set (p0 # ps))
+\end{lstlisting}  
+Where \lstinline|polychain_of (p0 # ps @ [p0])| is just the list of all tuples of two 
+consecutive points in the list and 
+\lstinline|encompasses p seg = det3 (fst seg) (snd seg) p $\geq$ 0| states that p lies
+counterclockwise (or colinear)  of the vector  $\overrightarrow{(fst \; seg) (snd \; seg)}$. 
+With $(fst \; seg)$ being the first point in the tuple  
+\lstinline|seg| and $(snd \; seg)$ being the second point in the tuple \lstinline|seg|.
+\begin{lstlisting}
+  fun polychain_of where
+  "polychain_of [] = []"
+| "polychain_of [p2] = []"
+| "polychain_of (p1#p2#ps) = (p1, p2) # polychain_of (p2 # ps)"
+\end{lstlisting}  
+The \lstinline|list_all P l| predicate states that the condition \lstinline|P| has to hold
+for every element in the list \lstinline|l|.
+Consequently \lstinline|list_all (encompasses p) (polychain_of (p0 # ps @ [p0]))| states that p lies
+inside the polygon defined by \lstinline|p0 # ps| as it requires that p lies counterclockwise (or colinear) 
+of every edge of the polygon. Therefore the lemma \lstinline|polygon_eq_convex_hull| states that a point p
+lies inside the convex polygon defined by \lstinline|p0 # ps| if and only if p is in the convex hull
+of \lstinline|set (p0 # ps)|. Now we have the definition of a convex polygon and the proof that
+the convex hull of the corners of such a 
+polygon corresponds to the set of all points that lie within the polygon. Based on this we can show 
+that the inspected algorithms, for an input set $s$, compute a convex polygon according to the definition  
+and that the convex hull that corresponds to this convex polygon is indeed the convex hull of $s$.
 
 
 
 
+% So given for a list of points  \lstinline|p0 # ps| that contains at least three points, \lstinline|turns_only_left (p0#ps)|
+% and \lstinline|sorted_wrt (ccw' p0) ps| holds, then we know that 
+% Then we will need to show, that all other points in $s \subseteq \mathbb{R}^2$ (not corners)
+% lie inside the convex polygon that is spanned by the corners. 
+
+% Therefore we need a formalization for the convex polygon is and a proof that the
+% convex hull of the corners of the polygon is the set of points that lie inside the polygon.  
+% From this we will get that both algorithms calculate a list . Then we need to show that all other points in the input set $s$
+% lie within this convex polygon and from that we get that the algorithms indeed calculate 
+% the convex hull of the input set. In Isabelle/HOL, the 
 
 
 
@@ -135,6 +261,8 @@ a $q$ that fulfills $\forall r \in s.$ \lstinline|(ccw'_seg p)| $q$ $r$. If
 
 %how is it done in Isabelle
 \section{Jarvis-March Algorithm}
+\subsection{Definition of the Algorithm}
+\label{jarvis:def}
 The Jarvis March or Gift-Wrapping Algorithm is a simple output-sensitive way of calculating
 the convex hull of a given finite set $S \subseteq \mathbb{R}^2$ of points. It calculates the
 convex hull by calculating the corresponding convex polygon and returning
@@ -142,32 +270,119 @@ an ordered list of the corners of the polygon. The algorithm has runtime O(n * h
 is the number of points in S and h is the number of points that lie on the convex hull or
 the number of corners on the calculated polygon to be more precicse. 
 The algorithm starts by choosing a point that is guaranteed to lie on the convex hull, 
-for example a $p_0 = min_y min_x S$. Then the next corner of the convex polygon
+for example $p_0 = min_y min_x S$ (the lexicographical minimum). Then the next corner of the convex polygon
 is found by searching a $p_1$ such that every point $r \in s$ lies counterclockwise
-of $\vec{p_0 p_1}$ or is contained in the closed segment between $p_0$ and $p_1$. 
-As explained in \ref{sec:conv_hull} we then know that $(p_0,p_1)$ is 
-an edge of the wanted convex polygon and we know that $p_1$ is once again a point on
-the conex hull and even a corner of the polygon as we used the rigorous definition for
-what an edge of the polygon is. Therefore we can repeat the previous step
-and search for a $p_2$ such that every point in S lies counterclockwise of $\vec{p_1 p_2}$
-or is in the closed segment between $p_0$ and $p_1$. In Isabelle terms we want a $p_2$
-such that for all $r \in s$, it holds that 
-\lstinline|ccw' p$_1$ p$_2$ r $\lor$ r $\in$ closed_segment p$_1$ p$_2$ |.
+of $\vec{p_0 p_1}$ or is contained in the closed segment between $p_0$ and $p_1$, meaning
+$\forall r \in ps.$ \lstinline|(ccw'_seg p$_0$) p$_1$ r| should hold. 
+As explained in \ref{sec:order} we know  that such a $p_1$ exists, because 
+$\forall r \in ps.$ \lstinline|lex p$_0$ r| holds. In Isabelle the definition for
+finding the minimum with respect to the total order \lstinline|(ccw'_seg p$_0$)| is.
+\begin{lstlisting}
+  definition ccw'_seg_min :: " point set $\Rightarrow$ point" where
+  "ccw'_seg_min ps =  (THE p. p $\in$ ps $\land$ ($\forall$ q $\in$ ps. ccw'_seg p0 p q))"
+\end{lstlisting}  
+Now from \ref{sec:basics}, we 
+know that $(p_0,p_1)$ is an edge of the wanted convex polygon and 
+we know that $p_1$ is once again a point on
+the convex hull and a corner of the polygon as $(p_0,p_1)$ fulfills $\forall r \in ps.$ \lstinline|(ccw'_seg p$_0$) p$_1$ r|. 
+Therefore we can repeat the previous step
+and search for a $p_2$ that fulfills $\forall r \in ps.$ \lstinline|(ccw'_seg p$_1$) p$_2$ r|. 
+Once again according to \ref{sec:order}, we know that $\forall r \in ps.$ \lstinline|(ccw'_seg p$_0$) p$_1$ r|
+holds and therefore \lstinline|(ccw'_seg p$_1$)| is a total order and a unique $p_2$ exists.
 Again $p_2$ has to be a corner of the convex polygon and $(p_1,p_2)$ an edge on of the
 polygon. The algorithm continues until a $p_h = p_0$ is found to be the next point and
 stops, because the first corner of the polygon is encountered again. 
 The ordered sequence of points $p_0,p_q, ... , p_{h-1}$ are the corners of the convex polygon 
 and $(p_0,p_1),(p_1,p_2) ... ,(p_{h-2},p_{h-1}), (p_{h-1},p_0)$ are the edges of the polygon.
+This repeated finding of the next corner is defined as the function \lstinline|wrap|, where
+$q$ is the last minimum that was found and ps is the current set of points we want to find
+the convex hull of.
+\begin{lstlisting}
+function wrap :: "point $\Rightarrow$ point set $\Rightarrow$ point list" where
+"wrap q ps =  
+(if q = p0 then [] else q#(wrap (ccw'_seg_min q ps) (ps - {q})  ) )"
+\end{lstlisting}
+The last minimum $q$ is prepended to the list of corners we will return, if we not yet arrived
+at the first corner $p0$ again. The next corners are found by  recursively calling \lstinline|wrap|
+with the next corner or minimum \lstinline|ccw'_seg_min q ps| and the set $ps - \{q\}$. $q$ can be
+removed from the set of points we search for the next corner, as $q$ can not be a corner
+of the polygon again.
+Lastly the algorithm Javis March is defined by an inital call to wrap, but $p0$ is this time
+not removed from the set $ps$ we search for the next corner, because $p0$ is the only corner we
+can and must encounter twice.
+\begin{lstlisting}
+  definition "jarvis_march = to_set (wrap (ccw'_seg_min p0 ps) ps)"
+\end{lstlisting}  
+The \lstinline|to_set| function just turns the list or corners into the appropriate 
+definition of the set of points that lie inside the polygon (see \ref{sec:conv_poly}).  
+\begin{lstlisting}
+  fun to_set :: "point list $\Rightarrow$ point set" where
+"to_set [] = {p0}" |
+"to_set [p] = closed_segment p0 p" |
+"to_set qs = {p. list_all (encompasses p) (polychain_of (p0#qs@[p0]))}" 
+\end{lstlisting}
+The special cases of \lstinline|wrap| returning an empty list or an list with only one element
+need more explaination. If \lstinline|(wrap (ccw'_seg_min p0 ps) ps) = []|, then we know
+\lstinline|ccw'_seg_min p0 ps = p0| has to hold and therefore $\forall r \in ps.$ \lstinline|ccw'_seg p$_0$ p$_0$ r|.
+Intuitively it should be clear, that the only point $r$ that fulfills \lstinline|ccw'_seg p$_0$ p$_0$ r| is $p0$ itself
+and therefore $ps$ has to only contain $p0$ and the convex hull of a single point is a set containing this
+very point. If \lstinline|(wrap (ccw'_seg_min p0 ps) ps) = [p]|, then we know 
+$\forall r \in ps.$ \lstinline|ccw'_seg p$_0$ p r| and $\forall r \in ps.$ \lstinline|ccw'_seg p p$_0$ r|.
+Again from geometric intuition it should be clear that  $\forall r \in ps.$ \lstinline|r $\in$ closed_segment p0 p|
+should hold, as \lstinline|ccw' p$_0$ p r| or \lstinline|ccw' p p$_0$ r| instantly leads to a contradiction.
+The last case of the \lstinline|to_set| function just applies the definition for the 
+set of points inside inside a convex polygon, as introduced in \ref*{sec:conv_poly}. 
+\subsection{Jarvis March calculates the Convex Hull}
+In the following let $ps \subseteq \mathbb{R}^2$ be the finite set of points of which we want to calculate
+the convex hull and let $p0 = min_y min_x ps$ be the lexicographical minimum with which we start 
+Jarvis March, i.e. our first corner of the convex polygon. In Isabelle terms, we assume 
+\lstinline|$\forall$p $\in$  ps. lex p0 p| \space , \space  \lstinline|p0 $\in$ ps| \space  and \space  \lstinline|finite ps|.
+First we need to show that the recursive wrap function terminates. 
+\begin{lstlisting}
+  lemma wrap_dom:
+  assumes q $\in$ qs $\land$ p0 $\in$ qs
+  assumes "qs $\subseteq$ ps"
+  assumes "q = p0 $\lor$ ($\forall$q' $\in$ qs. ccw'_seg p_stl q q')"
+  shows "wrap_dom (q,qs)"
+\end{lstlisting}
+This lemma follows from the step by step 
+description of \ref*{jarvis:def}. In every step our last minimum $q$ was either equal to $p0$ (in the beginning) 
+which fulfills $\forall r \in ps.$ \lstinline|lex p$_0$ r| or our last minimum fulfilled 
+$\forall r \in ps.$ \lstinline|ccw'_seg p q r| (found with \lstinline|wrap|) for some $p$.
+In both cases \lstinline|(ccw'_seg q)| is a total order and a new minimum $q_{next}$ such that 
+$\forall r \in ps.$ \lstinline|ccw'_seg q q_{next} r| holds, exists (see \ref*{sec:order}). So 
+\lstinline| ccw'_seg_min q qs| and therefore every recursive call to \lstinline|wrap| is well-defined. 
+Additionally the size of the set with which \lstinline|wrap| is recursively called 
+decreases in every iteration. Hence the call  \lstinline|(wrap (ccw'_seg_min p0 ps) ps)|
+will terminate.
+Now we need to show that the list that \lstinline|(wrap (ccw'_seg_min p0 ps) ps)| 
+returns represents a correct convex polygon.
+\begin{lstlisting}
+lemma wrap_sorted_ccw':
+  shows "sorted_wrt (ccw' p0) (wrap (ccw'_seg_min p0 ps) ps)"
+
+lemma wrap_turns_left:
+  shows "turns_only_left (wrap (ccw'_seg_min p0 ps) ps)"
+\end{lstlisting}
+To do this, we first show that the inner call \lstinline|wrap (ccw'_seg_min q qs) (qs - {q})|,
+where we assume that $\forall r \in  qs.$ \lstinline|ccw'_seg p q r| holds
+for the last minimum $q$ and some $p$, produces a list that is \lstinline|sorted_wrt (ccw' p0)|.
+\begin{lstlisting}
+  lemma wrap_sorted:
+  assumes wrap (ccw'_seg_min q qs) (qs - {q}) = ls
+  assumes q $\in$ qs  $\land$ p0 $\in$ qs
+  assumes qs $\subseteq$ ps
+  assumes ($\forall$r $\in$  qs. ccw'_seg p q r) $\land$ (p0 $\neq$ q)
+  shows sorted_wrt (ccw' p0) ls
+\end{lstlisting}
+
+
 
 The algorithm is simpler than the Graham Scan or the Chan's algorithm and has a worse
 runtime than both unless h is small. Graham Scan achieves a $O(n log(n))$ runtime and 
 Chan's algorithm a $O(n log(h))$ runtime. If h is small Jarvis March 
 can be faster than Graham Scan.
-\begin{lstlisting}[language=isabelle]
-  lemma turns_only_right st $\Longrightarrow$
-  turns_only_right (grahamsmarch qs st)
-\end{lstlisting}
-  
+
 
 \section{Graham Scan}
 
