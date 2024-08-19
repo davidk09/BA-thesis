@@ -133,7 +133,7 @@ the set on which transitivity is supposed to hold. It can be shown that if there
 that for all $r \in s$ it holds that \lstinline|ccw'_seg p$_0$ p$_1$ r| holds, then  
 \lstinline|(ccw'_seg p$_1$)| is transitive on $s$. This restriction avoids the counterexample
 for general transitivity from above. Transitivity also holds if there exists a point $p_0$ such 
-that all $r \in s$ are lexicographically bigger than $p_0$, meaning $\forall r .$ \lstinline|lex p$_0$ r| holds,
+that all $r \in s$ are lexicographically bigger than $p_0$, meaning $\forall r \in s.$ \lstinline|lex p$_0$ r| holds,
 where \lstinline|lex| is defined as.
 \begin{lstlisting}
   definition lex:: point $\Rightarrow$ point $\Rightarrow$ bool where
@@ -332,12 +332,17 @@ Again from geometric intuition it should be clear that  $\forall r \in ps.$ \lst
 should hold, as \lstinline|ccw' p$_0$ p r| or \lstinline|ccw' p p$_0$ r| instantly leads to a contradiction.
 The last case of the \lstinline|to_set| function just applies the definition for the 
 set of points inside inside a convex polygon, as introduced in \ref*{sec:conv_poly}. 
-\subsection{Jarvis March calculates the Convex Hull}
+\subsection{Jarvis March is Convex Hull}
+\label{jarvis:proofs}
 In the following let $ps \subseteq \mathbb{R}^2$ be the finite set of points of which we want to calculate
 the convex hull and let $p0 = min_y min_x ps$ be the lexicographical minimum with which we start 
 Jarvis March, i.e. our first corner of the convex polygon. In Isabelle terms, we assume 
 \lstinline|$\forall$p $\in$  ps. lex p0 p| \space , \space  \lstinline|p0 $\in$ ps| \space  and \space  \lstinline|finite ps|.
 First we need to show that the recursive wrap function terminates. 
+% would it be better to change to wrap not removing points from the set ?
+% would make proof for turns_only_left etc. a lot simpler /
+% but showing termination is probably very difficult 
+% maybe explain tradeoff
 \begin{lstlisting}
   lemma wrap_dom:
   assumes q $\in$ qs $\land$ p0 $\in$ qs
@@ -358,30 +363,181 @@ will terminate.
 Now we need to show that the list that \lstinline|(wrap (ccw'_seg_min p0 ps) ps)| 
 returns represents a correct convex polygon.
 \begin{lstlisting}
-lemma wrap_sorted_ccw':
+lemma wrap_sorted:
   shows "sorted_wrt (ccw' p0) (wrap (ccw'_seg_min p0 ps) ps)"
 
 lemma wrap_turns_left:
   shows "turns_only_left (wrap (ccw'_seg_min p0 ps) ps)"
 \end{lstlisting}
+We will start with the proof of \lstinline|sorted_wrt (ccw' p0) (wrap (ccw'_seg_min p0 ps) ps)|.
 To do this, we first show that the inner call \lstinline|wrap (ccw'_seg_min q qs) (qs - {q})|,
 where we assume that $\forall r \in  qs.$ \lstinline|ccw'_seg p q r| holds
 for the last minimum $q$ and some $p$, produces a list that is \lstinline|sorted_wrt (ccw' p0)|.
 \begin{lstlisting}
-  lemma wrap_sorted:
+  lemma wrap_sorted_ind:
   assumes wrap (ccw'_seg_min q qs) (qs - {q}) = ls
   assumes q $\in$ qs  $\land$ p0 $\in$ qs
   assumes qs $\subseteq$ ps
   assumes ($\forall$r $\in$  qs. ccw'_seg p q r) $\land$ (p0 $\neq$ q)
   shows sorted_wrt (ccw' p0) ls
 \end{lstlisting}
+The proof works by induction over the list ls. In the inductive case, we 
+assume \lstinline|ls = a # b # rs| and that the induction hypothesis holds for \lstinline|b # rs|.
+Meaning we want to show  \lstinline| sorted_wrt (ccw' p0) a # b # rs| and assume that 
+\lstinline| sorted_wrt (ccw' p0) b # rs| already holds additional to the other assumptions like
+$q \in qs$ and \lstinline|$\forall$r $\in$  qs. ccw'_seg p q r |.
+As the \lstinline|sorted_wrt (ccw' p0)|
+predicate only makes sense for list of at least length two, we can assume 
+\lstinline|ls = a # b # rs| in the inductive case.
+Due to the properties of \lstinline|wrap|, a and b are minima defined by the 
+\lstinline|ccw'_seg_min| function, for example \lstinline|a = (ccw'_seg_min q qs)| has 
+to hold. From this, one can show that $\forall r \in  (qs - \{a,b\}).$ \lstinline|ccw'_seg a b r|
+and $a \neq p0  \land  b \neq p0$  holds. From $a \neq p0  \land  b \neq p0$ and $p0 \in qs$,
+we know that $p0 \in (qs - \{a,b\})$ holds and with that \lstinline|ccw'_seg a b p0| has to
+hold. But because we assumed $p0$ to be the lexicographical minimum of $ps$ and 
+$a \in ps  \land  b \in ps$, we know \lstinline|lex p0 a  $\land$ lex p0 b| has to hold.
+From geometric intuition it should be clear, that if \lstinline|lex p0 a  $\land$ lex p0 b|
+and $a \neq p0  \land  b \neq p0$, it follows that \lstinline|p0 $\in$ closed_segment a b| can not hold. 
+Hence with \lstinline|ccw'_seg a b p0| we know, that \lstinline|ccw' a b p0|
+and therefore \lstinline|ccw' p0 a b| has to hold. Using the induction hypothesis 
+\lstinline| sorted_wrt (ccw' p0) b # rs|, we know that \lstinline| $\forall r \in$  set rs. ccw' p0 b r|
+holds. From $\forall r \in ps.$ \lstinline|lex p$_0$ r|, we know that \lstinline|(ccw' p0)| is 
+a total order on $ps$ and therefore also transitive on $ps$. Each element in the list $rs$ is 
+indirectly picked from $ps$, which implies \lstinline|(set rs) $\subseteq$ ps|.
+So in the end, from \lstinline| $\forall r \in$  set rs. ccw' p0 b r| and \lstinline|ccw' p0 a b|
+follows with transitivity \lstinline| $\forall r \in$  set (b#rs). ccw' p0 a r|. Again
+together with the induction hypothesis \lstinline| sorted_wrt (ccw' p0) a # b # rs| follows,
+which is what we wanted to show.
+The final lemma for \lstinline| sorted_wrt (ccw' p0) (wrap (ccw'_seg_min p0 ps) ps) | works
+very similar, but a slightly different approach is needed, because in the first step the 
+old minimum $p0$  is not removed from $ps$ for the call to \lstinline|wrap|.
 
+Now we want to show the second part \lstinline|turns_only_left (wrap (ccw'_seg_min p0 ps) ps)|.
+Again we start with the inner call \lstinline|wrap (ccw'_seg_min q qs) (qs - {q})|.
+\begin{lstlisting}
+  lemma wrap_turns_left_ind:
+  assumes "wrap (ccw'_seg_min q qs)  (qs - {q}) = ls"
+  assumes q $\in$ qs  $\land$ p0 $\in$ qs
+  assumes qs $\subseteq$ ps
+  assumes ($\forall$r $\in$  qs. ccw'_seg p q r) $\land$ (p0 $\neq$ q)
+  shows " turns_only_left ls"
+\end{lstlisting}
+Similar to before in the inductive case, we assume \lstinline|ls = k # q # p # rs|
+and can show using the other assumptions and the induction hypothesis that
+\lstinline|turns_only_left q # p # rs| already holds. Now we want to show  
+\lstinline|turns_only_left k # q # p # rs|, which in this case only requires to
+show \lstinline|ccw' k q p|, because of the induction hypothesis. Again the points 
+k q and p are defined by \lstinline|ccw'_seg_min| and we can show that    
+$\forall r \in  (qs - \{k,q\}).$ \lstinline|ccw'_seg k q r| and \lstinline|ccw'_seg k q p| 
+holds. Now if \lstinline|p $\in$ closed_segment k q| would hold, then k, q and p would be
+colinear. Also from the previously shown wrap\_sorted\_ind we know, that 
+\lstinline|ccw' p0 k q| and \lstinline|ccw' p0 q p| hold. From this and the fact
+that k q and p are colinear it would follow that \lstinline|q $\in$ closed_segment k p|,
+which should be apparent from an geometric viewpoint. But if 
+\lstinline|p $\in$ closed_segment k q| and \lstinline|q $\in$ closed_segment k p| holds,
+then it can be shown that $p = q$ has to hold, which is a contradiction to for example 
+\lstinline|ccw' p0 q p|. Therefore \lstinline|p $\in$ closed_segment k q| can not hold
+and with \lstinline|ccw'_seg k q p|, it follows that \lstinline|ccw' k q p| has to hold,
+which shows the lemma.
+So \lstinline|(wrap (ccw'_seg_min p0 ps) ps)| does indeed produce a convex polygon. 
+Finally we can show the lemma \lstinline|jarvis_eq_convex_hull|.
+\begin{lstlisting}
+  lemma jarvis_eq_convex_hull:
+  "jarvis_march p0 ps = convex hull ps"  
+\end{lstlisting}
+Applying the definition of the jarvis\_march function, we have to show \\
+\lstinline|to_set (wrap (ccw'_seg_min p0 ps) ps) = convex hull ps|.
+Why this equality holds if \lstinline|wrap (ccw'_seg_min p0 ps) ps| returns an empty list 
+or a list with one element was already explained when the \lstinline|to_set| function
+was defined (see \ref*{jarvis:def}). If the list \lstinline|ls = wrap (ccw'_seg_min p0 ps) ps| contains at 
+least two points, we know from \lstinline|wrap_sorted| and \lstinline|wrap_turns_left|, that
+$ls$ correctly represents a convex polygon. As $ls$ represents a correct convex polygon and 
+contains at least two points, we know \lstinline|jarvis_march p0 ps = to_set ls|
+is the set of points inside the corresponding polygon. 
+\begin{lstlisting}
+to_set ls = {p. list_all (encompasses p) polychain_of (p0#ls@[p0])}  
+\end{lstlisting}
+With \lstinline|wrap_sorted|, \lstinline|wrap_turns_left| and \lstinline|polygon_eq_convex_hull|,
+we then know that the set of points inside the polygon is equal to the convex hull of the corners.
+\begin{lstlisting}
+{p. list_all (encompasses p) polychain_of (p0#ls@[p0])} = convex hull (set p0#ls) 
+\end{lstlisting}
+This is almost what we wanted to show.
+All points in $ls$ are points from $ps$, they are precicsely the points that were identified as
+corners of the convex polygon that is the convex hull of $ps$. When we start with 
+a call \lstinline|(wrap (ccw'_seg_min p0 ps) ps)| to the wrap function, we know
+that in every recursive call to \lstinline|wrap|, one point will be removed from $ps$
+until $p0$ is encountered and ls ist returned. The points that are removed from $ps$
+throughout the recursion are exactly the points in $ls$. 
+With that we also know, that the points \lstinline|ps - (set ls)| are in the set that 
+is considered for the next corner in every recursive step of 
+\lstinline|(wrap (ccw'_seg_min p0 ps) ps)|. This implies that 
+for every $r$ in \lstinline|ps - (set ls)| and every two consecutive corners 
+$p$, $q$ in $ls$ it holds that \lstinline|ccw'_seg p q r|. This is because $q$ is found 
+as minimum with respect to \lstinline|(ccw'_seg p)| and $r$ has to be in the set 
+in which we search the minimum.  Therefore this $r$ 
+lies inside the polygon defined by $ls$, as \lstinline|ccw'_seg p q r $\implies$ det3 p q r $\geq$ 0|
+and therefore we know that $r$ lies counterclockwise (or colinear) of 
+every edge of the polygon. The edges of the polygon are exactly the elements of 
+the list \lstinline|polychain_of (p0#ls@[p0])|.  
+Meaning we know \lstinline|list_all (encompasses $r$) polychain_of (p0#ls@[p0])|
+holds
+and the inside of the polygon is
+equal to the convex hull of the corners, hence we also know 
+\lstinline|r $\in$ convex hull (set p0#ls)|. Finally, we know 
+\lstinline|ps - set (ls) $\subseteq$ convex hull (set p0#ls)| and 
+\lstinline|set (ls) $\subseteq$ convex hull (set p0#ls)|, which implies \\
+\lstinline|convex hull (set p0#ls) = convex hull ps|. Using this equality 
+and the previously obtained \lstinline|jarvis_march p0 ps = convex hull (set p0#ls)|, 
+we get the final assertion.
+\subsection{Computability}
+In \ref*{jarvis:proofs}, the lemma \lstinline|wrap_dom| used, that if we 
+call \lstinline|wrap| with a valid last minimum like $p0 = min_y \: min_x \: ps$ in
+\lstinline|(wrap (ccw'_seg_min p0 ps) ps)|, then in every 
+recursive step with the last minimum being $p \in qs$, \lstinline|(ccw'_seg p)| is a total 
+order and transitive on the current set $qs \subseteq ps$. From the fact that \lstinline|(ccw'_seg p)|
+is transitive it should be clear, that the minimum can be found by looking at every element 
+in $qs$ once, which takes $O(|qs|) \leq O(|ps|) = O(n)$, if n is the number of points in the 
+input set for Jarvis March. Comparing two points according to the \lstinline|(ccw'_seg p)|
+predicate can be achieved with the following computable function, which can be shown to 
+be equivalent to the \lstinline|ccw'_seg| predicate.
+\begin{lstlisting}
+definition ccw'_seg_fun :: "point $\Rightarrow$ point $\Rightarrow$ point $\Rightarrow$  bool" where
+"ccw'_seg_fun p q r = 
+(det3 p q r > 0 $\lor$ (det3 p q r = 0 $\land$ dist p r $\leq$ dist p q) )"
 
-
+lemma ccw'_seg_fun_iff_ccw'_seg:
+  assumes  p $\in$ ps $\land$ q $\in$ ps
+  shows ccw'_seg_fun p_last p q $\longleftrightarrow$ ccw'_seg p_last p q
+\end{lstlisting}
+$p$ and $q$ have to be in some $ps$, which fulfills
+$\forall r  \in ps.$ \lstinline|ccw'_seg p_stl p_last r| $\lor$ 
+$\forall q \in ps.$ \lstinline|lex p_last r| for everything to be well-defined.
+Computing the determinant and distance between two points (\lstinline|dist|) only takes
+a few arithmetic operations, therefore comparing two points can be seen as an operation 
+that takes $O(1)$. 
+To sum up, given there are $h$ corners in the convex polygon and $n$ points in the 
+input set $ps$, we have to find $h$ times the minimum with respect to a total order
+which takes $O(n)$ steps and therefore we get a runtime of $O(h \cdot n)$.
 The algorithm is simpler than the Graham Scan or the Chan's algorithm and has a worse
-runtime than both unless h is small. Graham Scan achieves a $O(n log(n))$ runtime and 
-Chan's algorithm a $O(n log(h))$ runtime. If h is small Jarvis March 
+runtime than both unless h is small. Graham Scan achieves a $O(n \cdot log(n))$ runtime and 
+Chan's algorithm a $O(n \cdot log(h))$ runtime. If h is small Jarvis March 
 can be faster than Graham Scan.
+
+% They were identified by iterating 
+% the \lstinline|wrap| function until $p0$ is encountered, where in every iteration, 
+% the point \lstinline|l $\in$ ls| that was identified in this iteration is removed from the 
+% set with which \lstinline|wrap| continues to iterate. Consequently we know that 
+% \lstinline|ps - (set ls)| are never removed from the set over which 
+% \lstinline|wrap (ccw'_seg_min p0 ps) ps| iterates, because we start with $ps$ and 
+% we never remove any point in \lstinline|ps - (set ls)|. 
+% the points that remain in the set over which \lstinline|wrap| iterates until the end.
+
+
+% As explained in \ref{sec:conv_poly} with the \lstinline|poylgon_eq_convex_hull| lemma
+% the proof that Jarvis March calculates the convex hull is almost done. 
+% But one problem remains, for the points which    
+
 
 
 \section{Graham Scan}
