@@ -27,7 +27,33 @@ predicate is defined as the intersection of all sets t that contain s and fulfil
 Consequently \lstinline|convex hull s| refers to the intersection of all convex sets that 
 contain $s$ and therefore the convex hull of the set $s$.
 In the two dimensional case for a finite $s \subset \mathbb{R}^2$, the convex hull CH of $s$ 
-is a convex polygon and all the corners of this convex polygon are points from S (see figure 1). \cite{de2000computational}
+is a convex polygon and all the corners of this convex polygon are points from S (see figure 1)\cite{de2000computational}. 
+
+\noindent
+\begin{minipage}{0.45\textwidth}
+  \includestandalone{convex_set}
+\end{minipage}%
+\hfill
+\begin{minipage}{0.45\textwidth}
+\begin{tikzpicture}
+  
+  \filldraw[red] (0, 0) coordinate(p0) circle (2pt);
+  \filldraw[red] (1,-1) coordinate(p1) circle (2pt);
+  \filldraw[red] (-1,-2) coordinate(p2) circle (2pt);
+  \filldraw[red] (2,1) coordinate(p3) circle (2pt);
+  \filldraw[red] (-2,0.5) coordinate(p4) circle (2pt);
+  \filldraw[red] (-1,-1) coordinate(p5) circle (2pt);
+
+
+  \draw (p3) -- (p1) -- (p2) -- (p4) -- cycle;
+
+\end{tikzpicture}
+\end{minipage}
+
+
+
+
+
 As this thesis will focus on the two dimensional case and only give an outlook on the the 
 three dimensional case, we will deal with computing the convex hull of $s \in \mathbb{R}^2$ 
 in the following and therefore computing a convex polygon as representation of the convex hull of $s$.  
@@ -102,6 +128,30 @@ counterclockwise of $\vec{pq}$ or r is contained in the closed segment between p
 \begin{lstlisting}
   definition ccw'_seg p q r = ccw' p q r $\lor$ r $\in$ closed_segment p q
 \end{lstlisting}
+\subsubsection{Intuition}
+\label{det3:intuition}
+It is not intuitively clear why \lstinline|0 < det3 (x0,y0) (x1,y1) (x2,y2)| ensures a 
+counterclockwise orientation. The \lstinline|det3| function can  be interpreted as calculating 
+the determinant of the previously described matrix, but the calculations of the \lstinline|det3|
+function can also be reformulated.
+\begin{lstlisting}
+  lemma det_form: "det3 (x0,y0) (x1,y1) (x2,y2)  =  
+        (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)" 
+\end{lstlisting}
+Using this definition \lstinline|0 < det3 (x0,y0) (x1,y1) (x2,y2)| means \newline
+$(x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0) > 0$,
+which can be reformulated to \newline
+$(x1 - x0) * (y2 - y0) >  (x2 - x0) * (y1 - y0)$.
+Now assuming $y2 \neq y0 \land y1 \neq y0$ and $sign(y2 - y0) = sign (y1 - y0)$, then
+we have \newline $(y2 - y0) / (x2 - x0) >   (y1 - y0) / (x1 - x0)$. Therefore the points 
+$(x0,y0),(x1,y1),(x2,y2)$ are orientated counterclockwise if the slope of
+$\overrightarrow{(x0,y0) (x2,y2)}$ is greater than the slope of $\overrightarrow{(x0,y0) (x1,y1)}$,
+(assuming $y2 \neq y0 \land y1 \neq y0 \land sign(y2 - y0) = sign (y1 - y0)$). 
+This should make the connection between the \lstinline|det3| function and the geometric
+statement $(x2,y2)$ lies counterclockwise of $\overrightarrow{(x0,y0) (x1,y1)}$ more obvious.
+Lastly even if $y2 \neq y0 \land y1 \neq y0 $, but 
+$sign(y2 - y0) \neq sign (y1 - y0)$, we are still comparing the slopes, the $>$ just 
+becomes a $<$.
 
 
 \subsection{Order}
@@ -491,7 +541,8 @@ equal to the convex hull of the corners, hence we also know
 and the previously obtained \lstinline|jarvis_march p0 ps = convex hull (set p0#ls)|, 
 we get the final assertion.
 \subsection{Computability}
-In \ref*{jarvis:proofs}, the lemma \lstinline|wrap_dom| used, that if we 
+In %\ref{jarvis:proofs}
+, the lemma \lstinline|wrap_dom| used, that if we 
 call \lstinline|wrap| with a valid last minimum like $p0 = min_y \: min_x \: ps$ in
 \lstinline|(wrap (ccw'_seg_min p0 ps) ps)|, then in every 
 recursive step with the last minimum being $p \in qs$, \lstinline|(ccw'_seg p)| is a total 
@@ -541,9 +592,273 @@ can be faster than Graham Scan.
 
 
 \section{Graham Scan}
+In Simon Hanssen's Bachelor Thesis, it was already shown that the Graham Scan Algorithm
+calculates the convex hull of a input set of points. 
+However the Graham Scan Algorithm works by first sorting the points and then 
+calculating the convex hull. So far it was only shown that given a list of
+sorted points $ps$, the second phase of the algorithm correctly calculates
+the convex hull. Assuming the points of which we want to calculate
+the convex hull are given as a list $ps$ and $p0 = min_y min_x$ \lstinline|(set ps)| is the 
+lexicographical minimum, then the proof assumes \lstinline|sorted_wrt (ccw' p0) ps|. 
+Therefore we want to implement the sorting phase and show that it produces a list $ps$,
+which is \lstinline|sorted_wrt (ccw' p0) ps|. To avoid duplication, an existing framework
+for sorting elements according to an order should be used. The Comparator theory provides
+a definition for comparing two elements of an arbitrary type.
+\begin{lstlisting}
+locale comparator =
+  fixes cmp :: "'a $\Rightarrow$ 'a $\Rightarrow$ comp"
+  assumes refl: "$\forall$ a. cmp a a = Equiv"
+      and trans_equiv: "$\forall$ a b c. cmp a b = Equiv $\Longrightarrow$ 
+                        cmp b c = Equiv $\Longrightarrow$ cmp a c = Equiv"
+  assumes trans_less: "cmp a b = Less $\Longrightarrow$ cmp b c = Less $\Longrightarrow$ cmp a c = Less"
+      and greater_iff_sym_less: "$\forall$ b a. cmp b a = Greater $\longleftrightarrow$ cmp a b = Less"
+
+datatype comp = Less | Equiv | Greater
+
+\end{lstlisting} 
+The operation \lstinline|cmp| that compares two values of type \lstinline|'a| is defined
+to be of the type \lstinline|'a comparator|.
+\begin{lstlisting}
+  typedef 'a comparator = "{cmp :: 'a $\Rightarrow$ 'a $\Rightarrow$ comp. comparator cmp}"
+\end{lstlisting}
+Lastly \lstinline|sort| is the already implemented sorting that uses a Comparator,
+takes in an arbitrary list and produce a \lstinline|sorted| list.
+\begin{lstlisting}
+  definition sort :: "'a comparator $\Rightarrow$ 'a list $\Rightarrow$ 'a list"
+
+  lemma sorted_sort :
+  "sorted cmp (sort cmp xs)"
+\end{lstlisting}
+The Comparator framework uses the \lstinline|sorted| predicate to express that a list is 
+sorted, therefore we need to translate from the \lstinline|sorted| predicate to
+the \lstinline|sorted_wrt| predicate.
+\begin{lstlisting}
+  lemma sorted_wrt_if_sorted: "sorted cmp ls $\Rightarrow$ 
+  sorted_wrt ($\lambda$ a b.(compare cmp a b = Equiv) $\lor$ (compare cmp a b = Less)) ls" 
+\end{lstlisting}
+The \lstinline|compare| function just applies a Comparator $cmp$ to two elements $a$ and $b$. 
+From the fact that the order \lstinline|(ccw' p0)| is in general not transitive (see \ref*{sec:order}),
+it should become clear that an intuitive definition like \lstinline|ccw'_comparator| will not work.
+\begin{lstlisting}
+  lift_definition ccw'_comparator :: "point comparator" 
+    is "$\lambda$ p q. if ccw' p0 p q then Less else if ccw' p0 q p then Greater 
+                       else Equiv"
+\end{lstlisting}
+For arbitrary $p$, $q$ and $r$, \lstinline|ccw' p0 p q $\land$ ccw' p0 q r $\implies$ ccw' p0 p r|
+does not always hold. If, for example \lstinline|lex p|, \lstinline|lex q| and \lstinline|lex r| is the case,
+then the implication does hold. A possible solution to this problem uses a different viewpoint on 
+what \lstinline|sorted_wrt (ccw' p0) ps| actually means. Instead of interpreting $ps$ as being sorted
+according to \lstinline|(ccw' p0)|, we can interpret $ps$ as being sorted with respect to the angle 
+the points in $ps$ form with the x-axis, that goes through $p0$.
+
+\noindent
+\begin{minipage}{0.45\textwidth}
+\begin{tikzpicture}
+
+  \draw[->, thick] (-1, 0) -- (5, 0);
+  \draw[->, thick] (0, -3) -- (0, 3);
+  
+  \filldraw[red] (0, 0) coordinate(p0) circle (2pt)  node[left] {$P_0$};
+  \filldraw[red] (xyz polar cs:angle=-45,radius=0.8) coordinate(p1) circle (2pt) node[right] {$P_1$};
+  \filldraw[red] (xyz polar cs:angle=22.5,radius=4) coordinate(p2) circle (2pt)  node[right] {$P_2$};
+  \filldraw[red] (xyz polar cs:angle=67.5,radius=3) coordinate(p3) circle (2pt)  node[right] {$P_3$};
+  
+  \draw[->,  gray] (p1) -- (xyz polar cs:angle=21,radius=3.9);
+  \draw[->,  gray] (p2) -- (xyz polar cs:angle=64,radius=2.9);
+  
+  \draw[gray] (0,0) -- (p1);
+  \draw[gray] (0,0) -- (p2);
+  
+\end{tikzpicture}
+\end{minipage}%
+\hfill
+\begin{minipage}{0.45\textwidth}
+\begin{tikzpicture}
+
+  \draw[->, thick] (-1, 0) -- (5, 0);
+  \draw[->, thick] (0, -3) -- (0, 3);
+  
+  \filldraw[red] (0, 0) coordinate(p0) circle (2pt)  node[left] {$p0$};
+  \filldraw[red] (xyz polar cs:angle=-45,radius=1.5) coordinate(p1) circle (2pt) node[right] {$P_1$};
+  \filldraw[red] (xyz polar cs:angle=22.5,radius=4) coordinate(p2) circle (2pt)  node[right] {$P_2$};
+  \filldraw[red] (xyz polar cs:angle=67.5,radius=3.5) coordinate(p3) circle (2pt)  node[right] {$P_3$};
+  
+  \draw[gray,dashed] (p1) -- (1.060, 0);
+  \draw[gray,dashed] (p2) -- (3.69,0);
+  \draw[gray,dashed] (p3) -- (1.339,0);
+
+  % % arking angles and labeling them
+  \draw[thick, ->] (0, 0)  -- (p1) {};
+  \draw[thick, ->] (0, 0) -- (p2) {};
+  \draw[thick, ->] (0, 0) -- (p3) {};
+  
+  % Drawing arcs for the angles
+  \draw[thick] (0,0) -- (1.060, 0) arc[start angle=0, end angle=-45, radius=1.060cm] node[midway, anchor=south west] {$\alpha$};
+  \draw[thick] (0,0) -- (3.69, 0) arc[start angle=0, end angle=22.5, radius=3.69cm] node[midway, anchor=west] {$\beta$};
+  \draw[thick] (0,0) -- (1.339, 0) arc[start angle=0, end angle=67.5, radius=1.339cm] node[midway, anchor=south] {$\gamma$};
+
+\end{tikzpicture}
+\end{minipage}
+
+
+In Figure x, you can see the lexicographical minimum p0 and a list of points \lstinline|ps = [$P_1$,$P_2$,$P_3$]|
+in a coordinate system. Notice that p0 is the lexicographical minimum \lstinline| $p0 = min_y \space min_x$ (set ps $\cup$ {p0}) |, 
+where we first minimize x and then y, therefore all points in $ps$ have greater or equal x-values than $p0$ and 
+only if they have the same x-value as $p0$, their y-value is greater or equal than the y-value of $p0$.
+Clearly the list \lstinline|ps = [$P_1$,$P_2$,$P_3$]| fulfills 
+\lstinline|sorted_wrt (ccw' p0) ps|, as \lstinline|ccw' p0 P_1 P_2| and  \lstinline|ccw' p0 P_2 P_3|
+holds. But $ps$ is also sorted with respect to the angles that the points form with $x'$, the line parallel
+to the x-axis, that goes through $p0$, as $\alpha = -\frac{\pi}{4}$, $\beta = \frac{\pi}{8}$, $\gamma = \frac{3 \pi}{8}$
+and $\alpha \le  \beta \le \gamma $ holds. It would also be possible to take the angles, that 
+the points form with $y'$ , the line parallel to the y-axis that goes through $p0$. In this case,
+we would have angles from $0$ to $\pi$, instead of angles from $-\frac{\pi}{2}$ to  $\frac{\pi}{2}$.
+For our purpose taking the angles with respect to $x'$ will be simpler. In the following, we are first
+going to calculate the angles, that the points in $ps$ form with $x'$, then we are going to sort the points
+in ascending order according to their angles and lastly we have to show that this order is always 
+going to be the same as if they were ordered accoring to \lstinline|(ccw' p0)|. The function \lstinline|angle|
+calculates the angle formed with $x'$, where $p0 = (x0,y0)$ and $(x1,y1)$ is going to be
+a point in $ps$. To be more precicse, the function calculates the angle 
+$\mathrel{\text{\large$\angle$}} (x1,y1) (x0,y0) (x0,y1)$ .
+\begin{lstlisting}
+  fun calc_angle1 :: "point $\Rightarrow$ point $\Rightarrow$ real" where
+  "calc_angle1 (x0,y0) (x1,y1) = (if x1 = x0 $\land$ y1 = y0 then -pi/2 else 
+                    if x1 = x0 then pi/2 else  arctan ((y1 - y0)/(x1 - x0))) "
+\end{lstlisting}
+Arcussinus or Arcuscosinus could be used to calculate the angles as well, but we choose 
+Arcustanges, as it translates to the \lstinline|(ccw' p0)| ordering more easily.
+Essentially we are calculating the Arcustanges of the slope of the vector $\overrightarrow{(x0,y0)(x1,y1)}$.
+However the case $x1=x0$ would be undefined, as $(x1 - x0) = 0$, therefore we have to handle this case differently.  
+As already explained, if a point $p1$ has the same x-value as $p0$, we know that the y-value of $p1$ has to
+be greater or equal than the y-value of $p0$. Therefore, assuming \lstinline|lex p0 p1|, we know that $y1 \ge y0$
+has to hold, if $x1 = x0$. Therefore it makes sense to assign the angle $\frac{\pi}{2}$, if $x1 = x0$ 
+and \lstinline|lex p0 p1|, which implies $y1 \ge y0$, holds. The case where $x1 = x0 \land y1 = y0$ will be explained 
+later. Now we can proof that if two points $p1$ and $p2$ have the same angle with respect
+to $p0$ , then $p0$, $p1$ and $p2$ are
+colinear.
+\begin{lstlisting}
+  lemma angle_to_det0:
+  assumes  "calc_angle1 (x0,y0) (x1,y1) = calc_angle1 (x0,y0) (x2,y2)" 
+  assumes  "x1 $\le$ x0 $\land$ x2 $\le$ x0"
+  shows   " det3 (x0,y0) (x1,y1) (x2,y2) = 0" 
+\end{lstlisting}
+The only interesting case is that $x1 \neq x0 \land x2 \neq x0$ and \\
+\lstinline|calc_angle1 (x0,y0) (x1,y1) = calc_angle1 (x0,y0) (x2,y2)| holds, because \\
+\lstinline|arctan ((y1 - y0)/(x1 - x0)) = arctan ((y2 - y0)/(x2 - x0))| holds. Then because
+of the injectivity of Arcustanges, we know  $\frac{y1 - y0}{x1 - x0} = \frac{y2 - y0}{x2 - x0}$ holds.
+From this we get $(y1 - y0) \cdot (x2 - x0) = (y2 - y0) \cdot (x1 - x0)$ and using the \lstinline|det_form|
+lemma from \ref{det3:intuition}, we get \lstinline|det3 (x0,y0) (x1,y1) (x2,y2) = 0|. \\
+Next we show the central lemma stating that if $(x2,y2)$ forms a greater angle with $x'$ than $(x1,y1)$
+does, we know that $(x0,y0)$, $(x1,y1)$, $(x2,y2)$ are oriented counterclockwise.
+\begin{lstlisting}
+  lemma angle_to_det:
+  assumes "calc_angle1 (x0,y0) (x1,y1) $<$ calc_angle1 (x0,y0) (x2,y2)" 
+  assumes "lex (x0,y0) (x1,y1)  $\land$ lex (x0,y0) (x2,y2) $\land$ 
+            (x0,y0) $\neq$ (x1,y1) $\land$ (x0,y0) $\neq$ (x2,y2)"
+  shows   " det3 (x0,y0) (x1,y1) (x2,y2) $>$ 0" 
+\end{lstlisting}
+Again for now we ignore the case where both arguments of \lstinline|angle| are 
+the same point and \lstinline|angle| would evaluate to $-\frac{\pi}{2}$. Then 
+the only interesting case is where $x1 \neq x0 \land x2 \neq x0$ holds and 
+\lstinline|angle| on both sides evaluates to \lstinline|arctan|, meaning 
+\lstinline|arctan ((y1-y0)/(x1-x0)) $<$ arctan ((y2-y0)/(x2-x0))| holds. Then due to 
+Arcustanges being strictly monotonically increasing, we know $\frac{y1 -y0}{x1 - x0} < \frac{y2-y0}{x2-x0}$.
+From $x1 \neq x0 \land x2 \neq x0$, we know that both sides are well-defined and 
+from \lstinline|lex (x0,y0) (x1,y1)| $\land$  \lstinline|lex (x0,y0) (x2,y2)|, we know $x1 \geq x0$
+and $x2 \geq x0$ holds. Therefore, we can reformulate $\frac{y1 -y0}{x1 - x0} < \frac{y2-y0}{x2-x0}$
+to $(y1 - y0) \cdot (x2 - x0) < (y2 - y0) \cdot (x1 - x0)$, which again using the \lstinline|det_form|
+lemma from \ref{det3:intuition} implies that \lstinline|det3 (x0,y0) (x1,y1) (x2,y2) $>$ 0| holds.
+
+Using the \lstinline|arctan| function in \lstinline|angle| is not necessary, it would be fine
+to just directly map a point $p$ to the slope of $\overrightarrow{p0 \; p}$ instead of 
+\lstinline|arctan| of the slope. Using \lstinline|arctan| and comparing angles
+instead of slopes is still preferable, as then \lstinline|angle| is a bounded function. If we would work 
+with slopes directly, a case where $x1 = x0$ would have to be mapped to $\infty$ or a 
+different special value and a different datatype than \lstinline|real| might be necessary. Comparing
+angles is easier for proofs and \lstinline|arctan| guarantees useful properties like boundedness.
+
+\subsection{Colinearity}
+\label{graham:colinear}
+So far, we ignored a non-trivial problem. The lemma which shows that the Graham Scan 
+algorithm calculates the convex hull assumes that the sorting phase produced a list 
+$ps$, which is \lstinline|sorted_wrt (ccw' p0) ps|. Therefore $ps$ cannot contain any
+$p,q \in$ \lstinline|(set ps)| with $p \neq q$ such that $p0$, $p$ and $q$ are colinear.
+Now we cannot assume this for an arbitrary input list or set of points. Therefore we will
+show that our implementation of the sorting phase produces a list $ps$ that is 
+\lstinline|sorted_wrt (ccw'_seg_rev p0) ps|, where \lstinline|ccw'_seg_rev| is 
+defined similar to \lstinline|ccw'_seg|.
+\begin{lstlisting}
+  definition "ccw'_seg_rev p q r = ccw' p q r $\lor$ q $\in$ closed_segment p r"
+\end{lstlisting}
+The fact that \lstinline|sorted_wrt (ccw'_seg_rev) ps| holds, is just the formal way 
+of expressing that if two points $p$, $q$ cannot be ordered according to \lstinline|(ccw' p0)|, because
+neither \lstinline|ccw' p0 p q| nor \lstinline|ccw' p0 q p| holds, they are ordered according to 
+\lstinline|(dist p0)|. Therefore if \lstinline|dist p0 p $\leq$ dist p0 q|, then p will preced q in the 
+list $ps$. Again this is very similar to \lstinline|ccw'_seg|, just that q would preced p if 
+\lstinline|dist p0 p $\leq$ dist p0 q| holds and $ps$ is sorted according to \lstinline|ccw'_seg|.
+%maybe show transitivity
+As we cannot ensure that the second phase of Graham Scan gets a $ps$ with 
+\lstinline|sorted_wrt (ccw' p0) ps|, we want the sorting phase to produce a $ps$, which 
+is sorted according to a weaker relation that still ensures that the second phase correctly
+computes the convex hull. For Graham Scan to still produce a 
+correct convex hull, \lstinline|ccw'_seg_rev| should be used. 
+
+\subsection{Angle Comparator}
+We have already 
+seen from \lstinline|angle_to_det| and \lstinline|angle_to_det0| that comparing the angles of points
+with \lstinline|angle| translates to comparing points with \lstinline|ccw'|.
+Now we want to get a comparator \lstinline|angle_comparator|, such that the already implemented 
+\lstinline|sort| according to this 
+comparator produces a $ps$ that fulfills \lstinline|sorted_wrt (ccw'_seg_rev p0) ps|.
+\begin{lstlisting}
+  lemma ccw'_seg_rev_if_sorted_w_angle_comp:
+  shows "sorted_wrt (ccw'_seg_rev p0) (sort angle_comparator ps)"
+\end{lstlisting}
+This lemma essentially uses three lemmas. First we use the previously explained \lstinline|sorted_wrt_if_sorted| lemma
+to translate from \lstinline|sorted| to \lstinline|sorted_wrt|. Second we need to prove the \lstinline|weaker_rel|
+lemma for our specific \lstinline|angle_comparator| and use the \lstinline|sorted_wrt_mono_rel| lemma to 
+translate from the \lstinline|angle_comparator| to the \lstinline|(ccw'_seg_rev p0)| predicate.
+\begin{lstlisting}
+  lemma  weaker_rel:
+  assumes ins: "x $\in$ set ps $\land$ y $\in$ set ps"
+  assumes rel: "(compare angle_comparator x y = Equiv) 
+  $\lor$(compare angle_comparator x y = Less)"
+  shows  "ccw'_seg_rev p0 x y"
+
+  lemma sorted_wrt_mono_rel:
+  "($\bigwedge$x y. $\llbracket$ x $\in$ set xs; y $\in$ set xs; P x y $\rrbracket$ $\Longrightarrow$ Q x y) 
+  $\Longrightarrow$ sorted_wrt P xs $\Longrightarrow$ sorted_wrt Q xs"
+\end{lstlisting} 
+A first definition of the  \lstinline|angle_comparator| could look like this.
+\begin{lstlisting}
+  lift_definition angle_comparator :: "point comparator"
+  is "$\lambda$ x y. if angle p0 x < angle p0 y then Less 
+                else if angle p0 x > angle p0 y then Greater else Equiv"
+\end{lstlisting} 
+But we also need to deal with the \lstinline|angle p0 x = angle p0 y| case in more
+detail, we cannot declare these points as \lstinline|Equiv|. As we have seen before, \lstinline|angle p0 x = angle p0 y| 
+implies that $p0$, $p1$ and $p2$ are colinear
+and as explained in \ref*{graham:colinear}, we want to compare the distance to p0 
+in this case. Therefore the final \lstinline|angle_comparator| will look like this.
+\begin{lstlisting}
+  definition "angle_comparator = 
+  key ($\lambda$p.(calc_angle1 p0 p ,dist p0 p)) lex_comparator"
+\end{lstlisting}
+\lstinline|key f cmp| creates a comparator, that works as follows.
+The new Comparator will first apply f to the two elements to compare and
+then compare them with the Comparator cmp. 
+\begin{lstlisting}
+  lift_definition key :: "('b $\Rightarrow$ 'a) $\Rightarrow$ 'a comparator $\Rightarrow$ 'b comparator"
+\end{lstlisting}
+The \lstinline|lex_comparator| translates the \lstinline|lex| predicate into a comparator in the 
+obvious way. Therefore the \lstinline|angle_comparator| takes two points $p$, $q$ and first maps them to 
+tuples \lstinline|(angle p0 p,dist p0 p)|,\lstinline|(angle p0 q,dist p0 q)| and then compares 
+themlexicographically, meaning first the angles are compared and if they are the same, the distance to p0
+is compared and if the distances are the same, the points are declared as equivalent. Now with this definition
+of \lstinline|angle_coomparator| it is possible to show the \lstinline|weaker_rel| lemma and with that the final 
+lemma \lstinline|ccw'_seg_rev_if_sorted_w_angle_comp| can be shown.
+
 
 \section{Chans Algorithm}
-
 
 Citation test~\parencite{latex}.
 
