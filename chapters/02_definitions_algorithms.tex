@@ -368,84 +368,122 @@ Figure x shows the steps of Jarvis March computing the convex hull of a input se
 \newpage
 \vspace{0.5cm}
 
-% Adding a tikzpicture to draw the vertical line in the middle
-\begin{tikzpicture}[remember picture,overlay]
-  % Vertical line in the middle
-  \draw[dashed] (current page.center);
-  
-  % Horizontal lines for separation
-  \draw[dashed] (0, -3cm) -- (\textwidth, -3cm); % Adjust as necessary for spacing
-  \draw[dashed] (0, -6cm) -- (\textwidth, -6cm); % Adjust as necessary for spacing
-\end{tikzpicture}
-
-
 \newpage
-\begin{minipage}{0.4\textwidth}
-  
-\end{minipage}
+% \begin{minipage}{0.4\textwidth}
 
-\begin{minipage}[t]{0.33\textwidth}
-    \centering
-    \includestandalone{figures/jarvis_march/input}     
-    \captionof{figure}{}
-    \vspace{-1cm}
-\end{minipage}
-\hfill
-\rule{0.5pt}{\textheight}
-\hfill
-\begin{minipage}[t]{0.33\textwidth}
-  \centering
-  \includestandalone{figures/jarvis_march/lex_min} 
-  \captionof{figure}{}
-  \vspace{-1cm}
-\end{minipage}
+%   \begin{minipage}[t]{\textwidth}
+%     \centering
+%     \includestandalone{figures/jarvis_march/input}     
+%     \vspace{0.5cm}
+%     \captionof{figure}{}
+%   \end{minipage}
+
+%   \vspace{1.5cm}
+
+%   \begin{minipage}[t]{\textwidth}
+%     \centering
+%     \includestandalone{figures/jarvis_march/step1}     
+%     \captionof{figure}{}
+%   \end{minipage}
+%   \vspace{1cm}
+%   \begin{minipage}[t]{\textwidth}
+%     \centering
+%     \includestandalone{figures/jarvis_march/step3}     
+%     \captionof{figure}{}
+%   \end{minipage}
+% \end{minipage}
+% % \hfill
+% % \vrule width 0.5pt % Vertical line
+% % \hfill
+% \begin{minipage}{0.4\textwidth}
+
+%   \begin{minipage}[t]{\textwidth}
+%     \centering
+%     \includestandalone{figures/jarvis_march/lex_min} 
+%     \captionof{figure}{}
+%   \end{minipage}  
+
+%   \vspace{1.5cm}
+
+%   \begin{minipage}[t]{\textwidth}
+%     \centering
+%     \includestandalone{figures/jarvis_march/step2} 
+%     \captionof{figure}{}      
+%   \end{minipage}
+%   \vspace{1cm}
+%   \begin{minipage}[t]{\textwidth}
+%     \centering
+%     \includestandalone{figures/jarvis_march/step4} 
+%     \captionof{figure}{}      
+%     \end{minipage}
+% \end{minipage}
+
+% \hfill
+% \rule{0.5pt}{\textheight}
+% \hfill
+
 
 \vspace{1cm}
 
+\begin{minipage}[t]{\textwidth}
+  \begin{minipage}[t]{0.33\textwidth}
+    \centering
+    \includestandalone{figures/jarvis_march/input}     
+    \captionof{figure}{}
+\end{minipage}
+\hfill
 \begin{minipage}[t]{0.33\textwidth}
+  \centering
+  \includestandalone{figures/jarvis_march/lex_min}     
+  \captionof{figure}{}
+\end{minipage}
+\end{minipage}
+\vspace{1cm}
+
+\begin{minipage}[t]{\textwidth}
+  \begin{minipage}[t]{0.33\textwidth}
     \centering
     \includestandalone{figures/jarvis_march/step1}     
     \captionof{figure}{}
 \end{minipage}
 \hfill
-\rule{0.5pt}{\textheight}
+\begin{minipage}[t]{0.33\textwidth}
+  \centering
+  \includestandalone{figures/jarvis_march/step2}     
+  \captionof{figure}{}
+\end{minipage}
+\end{minipage}
+\vspace{1cm}
+
+\begin{minipage}[t]{\textwidth}
+  \begin{minipage}[t]{0.33\textwidth}
+    \centering
+    \includestandalone{figures/jarvis_march/step3}     
+    \captionof{figure}{}
+\end{minipage}
 \hfill
 \begin{minipage}[t]{0.33\textwidth}
   \centering
-  \includestandalone{figures/jarvis_march/step2}  % Insert standalone picture in the right half
-  \captionof{figure}{}      
+  \includestandalone{figures/jarvis_march/step4}     
+  \captionof{figure}{}
+\end{minipage}
 \end{minipage}
 
 \vspace{1cm}
 
+\begin{minipage}[t]{\textwidth}
+  \begin{minipage}[t]{0.33\textwidth}
+    \centering
+    \includestandalone{figures/jarvis_march/step5}     
+    \captionof{figure}{}
+\end{minipage}
+\hfill
 \begin{minipage}[t]{0.33\textwidth}
   \centering
-  \includestandalone{figures/jarvis_march/step3}     
+  \includestandalone{figures/jarvis_march/step6}     
   \captionof{figure}{}
 \end{minipage}
-\hfill
-\rule{0.5pt}{\textheight}
-\hfill
-\begin{minipage}[t]{0.33\textwidth}
-\centering
-\includestandalone{figures/jarvis_march/step4}  % Insert standalone picture in the right half
-\captionof{figure}{}      
 \end{minipage}
-
-\begin{minipage}[t]{0.33\textwidth}
-  \centering
-  \includestandalone{figures/jarvis_march/step3}     
-  \captionof{figure}{}
-\end{minipage}
-\hfill
-\rule{0.5pt}{\textheight}
-\hfill
-\begin{minipage}[t]{0.33\textwidth}
-\centering
-\includestandalone{figures/jarvis_march/step4}  % Insert standalone picture in the right half
-\captionof{figure}{}      
-\end{minipage}
-\vspace{0.5cm}
 
 
 \subsubsection{Jarvis March in Isabelle/HOL}
