@@ -28,32 +28,6 @@ Consequently \lstinline|convex hull s| refers to the intersection of all convex 
 contain $s$ and therefore the convex hull of the set $s$.
 In the two dimensional case for a finite $s \subset \mathbb{R}^2$, the convex hull CH of $s$ 
 is a convex polygon and all the corners of this convex polygon are points from S (see figure 1)\cite{de2000computational}. 
-
-\noindent
-\begin{minipage}{0.45\textwidth}
-  \includestandalone{convex_set}
-\end{minipage}%
-\hfill
-\begin{minipage}{0.45\textwidth}
-\begin{tikzpicture}
-  
-  \filldraw[red] (0, 0) coordinate(p0) circle (2pt);
-  \filldraw[red] (1,-1) coordinate(p1) circle (2pt);
-  \filldraw[red] (-1,-2) coordinate(p2) circle (2pt);
-  \filldraw[red] (2,1) coordinate(p3) circle (2pt);
-  \filldraw[red] (-2,0.5) coordinate(p4) circle (2pt);
-  \filldraw[red] (-1,-1) coordinate(p5) circle (2pt);
-
-
-  \draw (p3) -- (p1) -- (p2) -- (p4) -- cycle;
-
-\end{tikzpicture}
-\end{minipage}
-
-
-
-
-
 As this thesis will focus on the two dimensional case and only give an outlook on the the 
 three dimensional case, we will deal with computing the convex hull of $s \in \mathbb{R}^2$ 
 in the following and therefore computing a convex polygon as representation of the convex hull of $s$.  
@@ -69,11 +43,31 @@ an edge if and only if all points in s are left of $\vec{pq}$, we will use this 
 But first we need to state the concept of a point $q$ being left of the vector $\vec{pq}$ more
 precicsely, especially when there can be three colinear points in $s$.
 
+
+
+\vspace{0.5cm}
+\begin{center}
+
+\begin{minipage}[t]{0.4\textwidth}
+      \centering
+      \includestandalone{figures/concave_set}     
+      \captionof{figure}{Non-convex set in 2D}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.4\textwidth}
+  \centering
+  \includestandalone{figures/convex_polygon_example}  % Insert standalone picture in the right half
+  \captionof{figure}{Convex polygon, which is the convex hull 
+    of the set of points $\{P_0, P_1, P_2 , P_3 ,P_4, P_5 , P_6 \}$}      
+\end{minipage}
+\end{center}
+\vspace{0.5cm}
+
 \subsection{Orientation}
-Figure x shows the convex hull of the points $s = \{p_0,p_1,p_2,p_3\}$ in the form of a convex polygon.
-When using the previous definition, $(p_1,p_2)$, $(p_2,p_3)$ and $(p_1,p_3)$
+Figure 2.2 shows the convex hull of the points $s = \{P_0, P_1, P_2 , P_3 ,P_4, P_5 , P_6 \}$ in the form of a convex polygon.
+When using the previous definition, $(P_4,P_5)$, $(P_5,P_6)$ and $(P_4,P_6)$
 would be edges of the convex polygon, because it holds that all points in $s$ are left 
-of $\vec{p_1 p_2}$, left of $\vec{p_2 p_3}$ and left of $\vec{p_1 p_3}$. 
+of $\vec{P_4 P_5}$, left of $\vec{P_5 P_6}$ and left of $\vec{P_4 P_6}$. 
 This is an unintuitive definition which should be avoided. Therefore we define the 
 condition for $(p,q)$ to be an edge of the convex hull polygon more precicsely.
 $(p,q) \in s^2$ is an edge of the convex hull polygon if and only if all points $r \in s$ 
@@ -128,6 +122,8 @@ counterclockwise of $\vec{pq}$ or r is contained in the closed segment between p
 \begin{lstlisting}
   definition ccw'_seg p q r = ccw' p q r $\lor$ r $\in$ closed_segment p q
 \end{lstlisting}
+
+
 \subsubsection{Intuition}
 \label{det3:intuition}
 It is not intuitively clear why \lstinline|0 < det3 (x0,y0) (x1,y1) (x2,y2)| ensures a 
@@ -142,16 +138,16 @@ Using this definition \lstinline|0 < det3 (x0,y0) (x1,y1) (x2,y2)| means \newlin
 $(x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0) > 0$,
 which can be reformulated to \newline
 $(x1 - x0) * (y2 - y0) >  (x2 - x0) * (y1 - y0)$.
-Now assuming $y2 \neq y0 \land y1 \neq y0$ and $sign(y2 - y0) = sign (y1 - y0)$, then
-we have \newline $(y2 - y0) / (x2 - x0) >   (y1 - y0) / (x1 - x0)$. Therefore the points 
+Now assuming $y2 \neq y0 \land y1 \neq y0$ and $sign(y2 - y0) = sign (y1 - y0)$, we get
+ $(y2 - y0) / (x2 - x0) >   (y1 - y0) / (x1 - x0)$. Therefore the points 
 $(x0,y0),(x1,y1),(x2,y2)$ are orientated counterclockwise if the slope of
-$\overrightarrow{(x0,y0) (x2,y2)}$ is greater than the slope of $\overrightarrow{(x0,y0) (x1,y1)}$,
-(assuming $y2 \neq y0 \land y1 \neq y0 \land sign(y2 - y0) = sign (y1 - y0)$). 
+$\overrightarrow{p_0 p_2}$ is greater than the slope of $\overrightarrow{p_0 p_1}$
+with $p_0 = (x0,y0)$,$p_1 = (x1,y1)$ and $p_2 = (x2,y2)$. 
 This should make the connection between the \lstinline|det3| function and the geometric
-statement $(x2,y2)$ lies counterclockwise of $\overrightarrow{(x0,y0) (x1,y1)}$ more obvious.
-Lastly even if $y2 \neq y0 \land y1 \neq y0 $, but 
-$sign(y2 - y0) \neq sign (y1 - y0)$, we are still comparing the slopes, the $>$ just 
-becomes a $<$.
+statement $p_2$ lies counterclockwise of $\overrightarrow{p_0 p_1}$ more obvious.
+Lastly even if $sign(y2 - y0) \neq sign (y1 - y0)$ is the case 
+and $y2 \neq y0 \land y1 \neq y0 $ still holds, we are still comparing the slopes, the $>$ just 
+changes to a $<$.
 
 
 \subsection{Order}
@@ -176,8 +172,18 @@ counterclockwise orientation. For example it should hold that if \lstinline|(ccw
 and \lstinline|(ccw'_seg p b c)| holds, then \lstinline|(ccw'_seg p a c)| should hold 
 as well. The same implication should hold when using the \lstinline|(ccw'_seg p)| 
 ordering instead of \lstinline|(ccw'_seg p)|. Altough straightforward, this kind of transitivity does not always
-hold as the following examples shows. Clearly \lstinline|(ccw' p$_1$ p$_2$ p$_3$)| holds and also 
-\lstinline|(ccw' p$_0$ p$_3$ p$_4$)|, but \lstinline|(ccw' p$_1$ p$_2$ p$_4$)| does not hold, instead 
+hold as the following example shows.
+
+\begin{center}
+\begin{minipage}{0.5\textwidth}
+  \centering
+  \includestandalone{figures/transitivity_counterexample}
+  \captionof{figure}{}
+\end{minipage}
+\end{center}
+
+Clearly \lstinline|(ccw' p$_1$ p$_2$ p$_3$)| holds and also 
+\lstinline|(ccw' p$_1$ p$_3$ p$_4$)|, but \lstinline|(ccw' p$_1$ p$_2$ p$_4$)| does not hold, instead 
 \lstinline|(ccw' p$_1$ p$_4$ p$_2$)| holds. So in order for transitivity to hold, we need to restrict 
 the set on which transitivity is supposed to hold. It can be shown that if there exists a $p_0$ such
 that for all $r \in s$ it holds that \lstinline|ccw'_seg p$_0$ p$_1$ r| holds, then  
@@ -237,7 +243,7 @@ represent a convex polygon by Simon Hanssen.
 To understand this proof, we need to first look at the definitions of all the predicates
 used. First \lstinline|turns_only_left l| for a list l expresses that every three consecutive
 points in the list are turning counterclockwise. This ensures that every interior angle of 
-the polygon is less than or equal $180^\circ$, which is one of the typical definitions
+the polygon is less than $180^\circ$, which is one of the common definitions
 of a convex polygon.
 \begin{lstlisting}
   fun turns_only_left :: "point list $\Rightarrow$ bool" where
@@ -246,13 +252,25 @@ of a convex polygon.
 \end{lstlisting}
 Next \lstinline|sorted_wrt (ccw' p0)|, where p0 is the start or our list of corners, states that
 for every corner $p$ in the list, all corners that are behind it in the list, lie counterclockwise
-of $\overrightarrow{p0  p}$.
+of $\overrightarrow{p0  p}$. 
 \begin{lstlisting}
   fun sorted_wrt :: "('a $\Rightarrow$ 'a $\Rightarrow$ bool) $\Rightarrow$ 'a list $\Rightarrow$ bool" where
-"sorted_wrt P [] = True" |
-"sorted_wrt P (x # ys) = (($\forall$ y $\in$ set ys. P x y) $\land$ sorted_wrt P ys)"
+  "sorted_wrt P [] = True" |
+  "sorted_wrt P (x # ys) = (($\forall$ y $\in$ set ys. P x y) $\land$ sorted_wrt P ys)"
 \end{lstlisting}     
-This property avoids degenerations as shown in Figure x.
+This ensures that the list of corners even represents a polygon
+without degenerations like the one shown in Figure \ref{degenerated_corners}. Clearly 
+\lstinline|turns_only_left [$p_0$,$p_1$,$p_2$,$p_3$,$p_4$,$p_5$,$p_6$]| holds,
+but \lstinline|sorted_wrt (ccw' p0) [ $p_1$,$p_2$,$p_3$,$p_4$,$p_5$,$p_6$]| does not
+hold, as the structure in Figure \ref{degenerated_corners} is not a valid polygon.
+\begin{center}
+  \begin{minipage}{0.5\textwidth}
+  \centering
+  \includestandalone{figures/degenerated_corner_list}
+  \captionof{figure}{}
+  \label{degenerated_corners}
+\end{minipage}
+\end{center}
 Lastly \lstinline| 2 $\leq$ length ps | is needed, as the definition does not work in the case 
 of two corners, where the polygon is just a closed segment between two points.
 Now given a list \lstinline|p0 # ps| fulfills these properties, then we know that this list
@@ -319,8 +337,9 @@ convex hull by calculating the corresponding convex polygon and returning
 an ordered list of the corners of the polygon. The algorithm has runtime O(n * h), where n 
 is the number of points in S and h is the number of points that lie on the convex hull or
 the number of corners on the calculated polygon to be more precicse. 
-The algorithm starts by choosing a point that is guaranteed to lie on the convex hull, 
-for example $p_0 = min_y min_x S$ (the lexicographical minimum). Then the next corner of the convex polygon
+The algorithm starts by choosing a point that is guaranteed to lie on the convex hull. 
+We will use the lexicographical minimum $p_0 = \min_{y} \min_{x} S$, or in Isabelle terms
+the $p0$, which fulfills \lstinline|$\forall q \in r.$ lex p0 r|.   Then the next corner of the convex polygon
 is found by searching a $p_1$ such that every point $r \in s$ lies counterclockwise
 of $\vec{p_0 p_1}$ or is contained in the closed segment between $p_0$ and $p_1$, meaning
 $\forall r \in ps.$ \lstinline|(ccw'_seg p$_0$) p$_1$ r| should hold. 
@@ -344,6 +363,92 @@ polygon. The algorithm continues until a $p_h = p_0$ is found to be the next poi
 stops, because the first corner of the polygon is encountered again. 
 The ordered sequence of points $p_0,p_q, ... , p_{h-1}$ are the corners of the convex polygon 
 and $(p_0,p_1),(p_1,p_2) ... ,(p_{h-2},p_{h-1}), (p_{h-1},p_0)$ are the edges of the polygon.
+Figure x shows the steps of Jarvis March computing the convex hull of a input set $ps$.
+
+\newpage
+\vspace{0.5cm}
+
+% Adding a tikzpicture to draw the vertical line in the middle
+\begin{tikzpicture}[remember picture,overlay]
+  % Vertical line in the middle
+  \draw[dashed] (current page.center);
+  
+  % Horizontal lines for separation
+  \draw[dashed] (0, -3cm) -- (\textwidth, -3cm); % Adjust as necessary for spacing
+  \draw[dashed] (0, -6cm) -- (\textwidth, -6cm); % Adjust as necessary for spacing
+\end{tikzpicture}
+
+
+\newpage
+\begin{minipage}{0.4\textwidth}
+  
+\end{minipage}
+
+\begin{minipage}[t]{0.33\textwidth}
+    \centering
+    \includestandalone{figures/jarvis_march/input}     
+    \captionof{figure}{}
+    \vspace{-1cm}
+\end{minipage}
+\hfill
+\rule{0.5pt}{\textheight}
+\hfill
+\begin{minipage}[t]{0.33\textwidth}
+  \centering
+  \includestandalone{figures/jarvis_march/lex_min} 
+  \captionof{figure}{}
+  \vspace{-1cm}
+\end{minipage}
+
+\vspace{1cm}
+
+\begin{minipage}[t]{0.33\textwidth}
+    \centering
+    \includestandalone{figures/jarvis_march/step1}     
+    \captionof{figure}{}
+\end{minipage}
+\hfill
+\rule{0.5pt}{\textheight}
+\hfill
+\begin{minipage}[t]{0.33\textwidth}
+  \centering
+  \includestandalone{figures/jarvis_march/step2}  % Insert standalone picture in the right half
+  \captionof{figure}{}      
+\end{minipage}
+
+\vspace{1cm}
+
+\begin{minipage}[t]{0.33\textwidth}
+  \centering
+  \includestandalone{figures/jarvis_march/step3}     
+  \captionof{figure}{}
+\end{minipage}
+\hfill
+\rule{0.5pt}{\textheight}
+\hfill
+\begin{minipage}[t]{0.33\textwidth}
+\centering
+\includestandalone{figures/jarvis_march/step4}  % Insert standalone picture in the right half
+\captionof{figure}{}      
+\end{minipage}
+
+\begin{minipage}[t]{0.33\textwidth}
+  \centering
+  \includestandalone{figures/jarvis_march/step3}     
+  \captionof{figure}{}
+\end{minipage}
+\hfill
+\rule{0.5pt}{\textheight}
+\hfill
+\begin{minipage}[t]{0.33\textwidth}
+\centering
+\includestandalone{figures/jarvis_march/step4}  % Insert standalone picture in the right half
+\captionof{figure}{}      
+\end{minipage}
+\vspace{0.5cm}
+
+
+\subsubsection{Jarvis March in Isabelle/HOL}
 This repeated finding of the next corner is defined as the function \lstinline|wrap|, where
 $q$ is the last minimum that was found and ps is the current set of points we want to find
 the convex hull of.

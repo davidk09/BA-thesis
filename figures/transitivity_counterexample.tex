@@ -1,0 +1,23 @@
+\documentclass[tikz]{standalone}
+
+\usetikzlibrary{calc}
+
+\begin{document}
+\begin{tikzpicture}
+    
+
+    \filldraw[black] (0, 0) coordinate(p0) circle (2pt) node[left] {$p_1$};
+    \filldraw[black] (2,-1.5) coordinate(p1) circle (2pt)  node[right] {$p_2$};
+    \filldraw[black] (0,1.5) coordinate(p2) circle (2pt)  node[above] {$p_3$};
+    \filldraw[black] (-2,-1.5) coordinate(p3) circle (2pt)  node[left] {$p_4$};
+    
+    \draw[gray,dashed] (p0) -- (p1);
+    \draw[gray,dashed] (p0) -- (p2);
+    \draw[gray,dashed] (p0) -- (p3);
+    \draw[->,gray,dashed] (p1) -- ($(p1)!0.8!(p2)$);
+    \draw[->,gray,dashed] (p2) -- ($(p2)!0.8!(p3)$);
+    \draw[->,gray,dashed] (p3) -- ($(p3)!0.8!(p1)$);
+
+
+\end{tikzpicture}
+\end{document}
